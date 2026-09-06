@@ -51,3 +51,16 @@ class TestNoSwitch:
 class TestSingleSwitch:
     def test_suite(self):
         _run_inner_class("TestSingleSwitch")
+
+
+# The two MoE classes run as separate subprocesses on purpose -- each builds its
+# own engine, and the names must not be prefixes of one another because
+# ``_run_inner_class`` selects with ``-k``, which matches substrings.
+class TestSparseMoEBatchCudaGraph:
+    def test_suite(self):
+        _run_inner_class("TestSparseMoEBatchCudaGraph")
+
+
+class TestSparseMoEBatchEager:
+    def test_suite(self):
+        _run_inner_class("TestSparseMoEBatchEager")

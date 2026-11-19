@@ -1,29 +1,29 @@
 {
-  "timestamp": "2026-11-19T21:07:52.570233",
+  "timestamp": "2026-11-19T21:48:15.385191",
   "num_seeds": 3,
   "seeds_data": [
     {
       "seed": 1,
       "total_conversations": 0,
-      "total_wall_time_s": 0
+      "total_wall_time_s": 46.322093470953405
     },
     {
       "seed": 2,
       "total_conversations": 0,
-      "total_wall_time_s": 0
+      "total_wall_time_s": 50.19585741823539
     },
     {
       "seed": 3,
       "total_conversations": 0,
-      "total_wall_time_s": 0
+      "total_wall_time_s": 46.75693701999262
     }
   ],
   "total_conversations_mean": 0.0,
   "total_conversations_std": 0.0,
   "total_conversations_min": 0.0,
   "total_conversations_max": 0.0,
-  "total_wall_time_s_mean": 0.0,
-  "total_wall_time_s_std": 0.0,
-  "total_wall_time_s_min": 0.0,
-  "total_wall_time_s_max": 0.0
+  "total_wall_time_s_mean": 47.758295969727136,
+  "total_wall_time_s_std": 1.7327341764728355,
+  "total_wall_time_s_min": 46.322093470953405,
+  "total_wall_time_s_max": 50.19585741823539
 }

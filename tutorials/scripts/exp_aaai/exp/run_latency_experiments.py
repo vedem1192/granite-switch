@@ -257,6 +257,46 @@ def kill_stale_vllm_processes():
         print("[CLEANUP] No stale vLLM processes found")
 
 
+def _extract_server_only(mixed_data: dict, server_name: str) -> dict:
+    """Extract only one server's data from the mixed results."""
+    if "servers" not in mixed_data or server_name not in mixed_data["servers"]:
+        raise RuntimeError(f"Server {server_name} not found in results")
+
+    server_data = mixed_data["servers"][server_name]
+
+    # Create a clean structure with just this server
+    clean = {
+        "metadata": mixed_data.get("metadata", {}),
+        "server_name": server_name,
+        "model": server_data.get("model", ""),
+        "adapter_tech": server_data.get("adapter_tech", {}),
+        "wall_total": server_data.get("wall_total", 0),
+        "conv_walls": server_data.get("conv_walls", []),
+        "conversations": server_data.get("conversations", []),
+        "exits": server_data.get("exits", {}),
+        "step_medians": server_data.get("step_medians", {}),
+    }
+
+    return clean
+
+
+def _filter_events_for_server(mixed_events: dict, server_name: str) -> dict:
+    """Filter events to include only one server."""
+    filtered_events = []
+
+    for event in mixed_events.get("events", []):
+        if event.get("srv") == server_name:
+            filtered_events.append(event)
+
+    clean = {
+        "metadata": mixed_events.get("metadata", {}),
+        "server_name": server_name,
+        "events": filtered_events,
+    }
+
+    return clean
+
+
 def run_benchmark(
     benchmark_script: Path,
     race_dir: Path,
@@ -304,6 +344,13 @@ def run_benchmark(
     os.chdir(race_dir)
 
     try:
+        # Clean old results before running (prevents mixed data)
+        race_results_path = race_dir / "race_results.json"
+        race_events_path = race_dir / "race_events.json"
+        race_results_path.unlink(missing_ok=True)
+        race_events_path.unlink(missing_ok=True)
+        print(f"            Cleaned old race results")
+
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=3600)
 
         if result.returncode != 0:
@@ -312,25 +359,32 @@ def run_benchmark(
             print(f"STDERR:\n{result.stderr}")
             raise RuntimeError(f"Benchmark failed for seed {seed}")
 
-        # Copy results to output directory with seed suffix
-        race_results = race_dir / "race_results.json"
-        race_events = race_dir / "race_events.json"
+        # Load and extract only this server's data
+        if not race_results_path.exists():
+            raise RuntimeError(f"Expected results file not found: {race_results_path}")
 
+        with open(race_results_path) as f:
+            mixed_data = json.load(f)
+
+        with open(race_events_path) as f:
+            mixed_events = json.load(f)
+
+        # Extract only this server's data
+        clean_results = _extract_server_only(mixed_data, server_name)
+        clean_events = _filter_events_for_server(mixed_events, server_name)
+
+        # Save cleaned data
         output_results = output_dir / f"race_results_seed{seed}.json"
         output_events = output_dir / f"race_events_seed{seed}.json"
-
-        # Ensure output directory exists
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        if race_results.exists():
-            shutil.copy2(race_results, output_results)
-            print(f"[SAVED] Results: {output_results}")
-        else:
-            raise RuntimeError(f"Expected results file not found: {race_results}")
+        with open(output_results, "w") as f:
+            json.dump(clean_results, f, indent=2)
+        print(f"[SAVED] Results (clean): {output_results}")
 
-        if race_events.exists():
-            shutil.copy2(race_events, output_events)
-            print(f"[SAVED] Events: {output_events}")
+        with open(output_events, "w") as f:
+            json.dump(clean_events, f, indent=2)
+        print(f"[SAVED] Events (clean): {output_events}")
 
         return output_results.resolve()
 
@@ -352,23 +406,17 @@ def aggregate_results(result_files: list[Path], output_path: Path):
         print("[WARNING] No results to aggregate")
         return
 
-    # Extract key metrics per seed
+    # Extract key metrics per seed (now using clean structure)
     metrics_per_seed = []
     for seed_idx, data in enumerate(all_results):
-        if isinstance(data, list):
-            # Handle case where data is a list of server results
-            server_data = data[0] if data else {}
-        else:
-            server_data = data
-
         metrics = {
             "seed": seed_idx + 1,
-            "total_conversations": len(server_data.get("conversations", [])),
-            "total_wall_time_s": server_data.get("total_seconds", 0),
+            "total_conversations": len(data.get("conversations", [])),
+            "total_wall_time_s": data.get("wall_total", 0),
         }
 
         # Extract per-step latencies
-        conversations = server_data.get("conversations", [])
+        conversations = data.get("conversations", [])
         if conversations:
             step_latencies = {}
             for conv in conversations:
@@ -433,44 +481,13 @@ def generate_html_reports(
     result_files: list[Path], race_dir: Path, output_dir: Path, server_label: str
 ):
     """Generate HTML visualization reports for each seed."""
-    print(f"\n[HTML] Generating visualization reports for {server_label}")
+    print(f"\n[HTML] Skipping HTML generation - templates expect 2-server race format")
+    print(f"       Use the JSON files directly or run analyze_latency_results.py")
+    print(f"       for paper-ready statistics.")
 
-    sample_dir = race_dir / "sample_run"
-    if not sample_dir.exists():
-        print(f"[WARNING] Sample HTML templates not found at {sample_dir}")
-        return
-
-    for seed_idx, result_file in enumerate(result_files, start=1):
-        seed_suffix = f"_seed{seed_idx}"
-        events_file = output_dir / f"race_events{seed_suffix}.json"
-
-        if not events_file.exists():
-            print(f"[WARNING] Events file not found: {events_file}")
-            continue
-
-        # Generate race_live.html
-        live_html = output_dir / f"race_live{seed_suffix}.html"
-        _embed_json_in_html(
-            sample_dir / "race_live.html",
-            events_file,
-            live_html,
-            "RACE_EVENTS_EMBEDDED",
-            "<<RACE_EVENTS>>",
-        )
-
-        # Generate race_report.html
-        report_html = output_dir / f"race_report{seed_suffix}.html"
-        _embed_json_in_html(
-            sample_dir / "race_report.html",
-            result_file,
-            report_html,
-            "RACE_DATA_EMBEDDED",
-            "<<RACE_DATA>>",
-        )
-
-        print(f"[SAVED] HTML reports for seed {seed_idx}:")
-        print(f"        Live: {live_html}")
-        print(f"        Report: {report_html}")
+    # Note: The HTML templates from sample_run/ are designed for simultaneous
+    # 2-server races. Since we now save clean single-server data, we'd need
+    # different templates. For now, skip HTML generation and use JSON directly.
 
 
 def _embed_json_in_html(

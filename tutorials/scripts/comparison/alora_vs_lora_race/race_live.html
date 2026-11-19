@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Granite Switch — ALORA vs LoRA Live Race</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1e1e1e;
+      color: #cccccc;
+      font-family: 'IBM Plex Mono', 'Consolas', 'Cascadia Code', 'Monaco', monospace;
+      font-size: 13px;
+      line-height: 1.4;
+      padding: 1rem 1.25rem 2rem;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #333;
+    }
+
+    .title { font-size: 1rem; font-weight: 600; color: #e0e0e0; }
+
+    .badge {
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 9px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-left: 0.6rem;
+      background: #0d3558;
+      color: #4fc3f7;
+      border: 1px solid #4fc3f7;
+      vertical-align: middle;
+    }
+    .badge.sim {
+      background: #332800;
+      color: #dcdcaa;
+      border-color: #dcdcaa;
+    }
+
+    .elapsed {
+      font-size: 1.05rem;
+      color: #dcdcaa;
+      min-width: 9rem;
+      text-align: right;
+    }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    button {
+      background: #2a2a2a;
+      color: #cccccc;
+      border: 1px solid #4a4a4a;
+      padding: 0.22rem 0.65rem;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.82rem;
+      border-radius: 2px;
+      transition: background 0.1s;
+    }
+    button:hover  { background: #353535; border-color: #777; }
+    button.active { background: #0d3558; color: #4fc3f7; border-color: #4fc3f7; }
+
+    #playBtn { min-width: 5rem; }
+
+    .speed-group { display: flex; gap: 2px; }
+    .speed-group button { padding: 0.22rem 0.45rem; }
+
+    .scrubber-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 3px;
+      background: #3a3a3a;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: #4fc3f7;
+      cursor: pointer;
+    }
+
+    .scrubber-time {
+      font-size: 0.72rem;
+      color: #666;
+      white-space: nowrap;
+      min-width: 9rem;
+      text-align: right;
+    }
+
+    /* ── Race grid ── */
+    .race-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: #333;
+      border: 1px solid #333;
+    }
+
+    .server-col { background: #1e1e1e; }
+
+    .server-header {
+      background: #252525;
+      color: #9cdcfe;
+      padding: 0.28rem 0.6rem;
+      font-weight: 600;
+      font-size: 0.82rem;
+      border-bottom: 1px solid #333;
+    }
+
+    .conv-rows { padding: 0.2rem 0.5rem 0.2rem; }
+
+    .conv-row {
+      white-space: pre;
+      line-height: 1.32;
+      font-size: 12.5px;
+    }
+
+    .server-footer {
+      background: #212121;
+      padding: 0.28rem 0.6rem;
+      font-size: 0.78rem;
+      border-top: 1px solid #2d2d2d;
+      min-height: 1.4rem;
+    }
+
+    /* ── Metrics panel ── */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: #333;
+      border: 1px solid #333;
+      border-top: none;
+    }
+    .metrics-rows { padding: 0.3rem 0.5rem 0.25rem; }
+    .m-row { white-space: pre; line-height: 1.38; font-size: 12.5px; }
+    .m-label { color: #555; display: inline-block; width: 8.5rem; }
+
+
+    /* ── Error ── */
+    #error { color: #f44747; margin: 1rem 0; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <span class="title">Granite Switch — ALORA vs LoRA Live Race</span>
+    <span class="badge" id="modeBadge">TELEMETRY</span>
+  </div>
+  <div class="elapsed" id="elapsed">0:00.0</div>
+</div>
+
+<div class="controls">
+  <button id="playBtn">&#9654; Play</button>
+  <div class="speed-group">
+    <button class="speed" data-speed="1">1&times;</button>
+    <button class="speed" data-speed="2">2&times;</button>
+    <button class="speed active" data-speed="5">5&times;</button>
+    <button class="speed" data-speed="10">10&times;</button>
+    <button class="speed" data-speed="50">50&times;</button>
+  </div>
+  <div class="scrubber-wrap">
+    <input type="range" id="scrubber" min="0" max="1000" value="0" step="1">
+    <span class="scrubber-time" id="scrubberTime">0:00.0 / 0:00.0</span>
+  </div>
+</div>
+
+<div class="race-grid" id="raceGrid"></div>
+<div class="metrics-grid" id="metricsGrid"></div>
+<div id="error"></div>
+
+<script>
+// ── Embedded data (replaced by bench script after each run) ─────────────────
+const RACE_EVENTS_EMBEDDED = {"metadata": {"mode": "sequential", "runs": 16, "concurrency": 8, "timestamp": "2026-11-19T19:00:03.249658+00:00", "race_wall": 108.32680681115016}, "race_wall": 108.32680681115016, "servers": ["LORA (8112)"], "events": [{"t": 0.0003, "ev": "conv_start", "srv": "LORA (8112)", "conv": 0}, {"t": 0.0003, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q1", "step": "harm"}, {"t": 0.0003, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q1", "step": "harm"}, {"t": 0.0012, "ev": "conv_start", "srv": "LORA (8112)", "conv": 1}, {"t": 0.0012, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q1", "step": "harm"}, {"t": 0.0012, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q1", "step": "harm"}, {"t": 0.0016, "ev": "conv_start", "srv": "LORA (8112)", "conv": 2}, {"t": 0.0016, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q1", "step": "harm"}, {"t": 0.0016, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q1", "step": "harm"}, {"t": 0.0023, "ev": "conv_start", "srv": "LORA (8112)", "conv": 3}, {"t": 0.0023, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q1", "step": "harm"}, {"t": 0.0023, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q1", "step": "harm"}, {"t": 0.0027, "ev": "conv_start", "srv": "LORA (8112)", "conv": 4}, {"t": 0.0027, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q1", "step": "harm"}, {"t": 0.0027, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q1", "step": "harm"}, {"t": 0.0029, "ev": "conv_start", "srv": "LORA (8112)", "conv": 5}, {"t": 0.0029, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q1", "step": "harm"}, {"t": 0.0029, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q1", "step": "harm"}, {"t": 0.0035, "ev": "conv_start", "srv": "LORA (8112)", "conv": 6}, {"t": 0.0035, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q1", "step": "harm"}, {"t": 0.0035, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q1", "step": "harm"}, {"t": 0.0039, "ev": "conv_start", "srv": "LORA (8112)", "conv": 7}, {"t": 0.0039, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q1", "step": "harm"}, {"t": 0.0039, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q1", "step": "harm"}, {"t": 0.6514, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q1", "step": "rewrite"}, {"t": 0.6585, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q1", "step": "rewrite"}, {"t": 0.6586, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q1", "step": "rewrite"}, {"t": 0.6587, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q1", "step": "rewrite"}, {"t": 0.6589, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q1", "step": "rewrite"}, {"t": 0.659, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q1", "step": "rewrite"}, {"t": 0.6592, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q1", "step": "rewrite"}, {"t": 0.6594, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q1", "step": "rewrite"}, {"t": 0.9801, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q1", "step": "retrieve"}, {"t": 1.1753, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 0.0, "running": 7, "waiting": 0, "ttft_avg": 0.275, "e2e_avg": 0.551, "prompt_avg": 121.0}}}, {"t": 1.1758, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q1", "step": "retrieve"}, {"t": 1.1759, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q1", "step": "retrieve"}, {"t": 1.1765, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q1", "step": "retrieve"}, {"t": 1.1766, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q1", "step": "retrieve"}, {"t": 1.1767, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q1", "step": "retrieve"}, {"t": 1.1768, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q1", "step": "retrieve"}, {"t": 1.1789, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q1", "step": "retrieve"}, {"t": 1.2282, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q1", "step": "answer?"}, {"t": 1.2767, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q1", "step": "answer?"}, {"t": 1.3425, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q1", "step": "answer?"}, {"t": 1.4056, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q1", "step": "answer?"}, {"t": 1.4628, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q1", "step": "answer?"}, {"t": 1.5246, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q1", "step": "answer?"}, {"t": 1.6072, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q1", "step": "answer?"}, {"t": 1.6824, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q1", "step": "answer?"}, {"t": 1.8899, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q1", "step": "clarify"}, {"t": 2.0704, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q1", "step": "clarify"}, {"t": 2.3417, "ev": "turn_done", "srv": "LORA (8112)", "conv": 3, "turns_done": 1}, {"t": 2.3417, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q2", "step": "harm"}, {"t": 2.3417, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q2", "step": "harm"}, {"t": 2.4301, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q1", "step": "clarify"}, {"t": 2.6834, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 0.8, "running": 3, "waiting": 5, "ttft_avg": 0.372, "e2e_avg": 0.567, "prompt_avg": 998.2}}}, {"t": 2.7108, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q1", "step": "clarify"}, {"t": 2.9008, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q1", "step": "clarify"}, {"t": 3.1828, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q1", "step": "clarify"}, {"t": 3.4745, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q1", "step": "clarify"}, {"t": 3.9441, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q1", "step": "generate"}, {"t": 4.0412, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q2", "step": "rewrite"}, {"t": 4.144, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q1", "step": "generate"}, {"t": 4.191, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 0.8, "running": 4, "waiting": 2, "ttft_avg": 0.613, "e2e_avg": 0.857, "prompt_avg": 1880.6}}}, {"t": 4.6283, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q1", "step": "generate"}, {"t": 4.8063, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q1", "step": "generate"}, {"t": 5.0706, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q1", "step": "generate"}, {"t": 5.331, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q1", "step": "generate"}, {"t": 5.6993, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 0.6, "running": 8, "waiting": 0, "ttft_avg": 0.667, "e2e_avg": 0.989, "prompt_avg": 2325.2}}}, {"t": 5.9119, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q2", "step": "retrieve"}, {"t": 5.9594, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q2", "step": "answer?"}, {"t": 7.2077, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 0.6, "running": 8, "waiting": 0, "ttft_avg": 0.676, "e2e_avg": 1.017, "prompt_avg": 2253.2}}}, {"t": 7.214, "ev": "turn_done", "srv": "LORA (8112)", "conv": 3, "turns_done": 2}, {"t": 7.214, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q3", "step": "harm"}, {"t": 7.214, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q3", "step": "harm"}, {"t": 7.3176, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q3", "step": "rewrite"}, {"t": 7.5521, "ev": "turn_done", "srv": "LORA (8112)", "conv": 1, "turns_done": 1}, {"t": 7.5521, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q2", "step": "harm"}, {"t": 7.5521, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q2", "step": "harm"}, {"t": 7.8629, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q2", "step": "rewrite"}, {"t": 7.9813, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q3", "step": "retrieve"}, {"t": 8.0371, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q3", "step": "answer?"}, {"t": 8.2918, "ev": "turn_done", "srv": "LORA (8112)", "conv": 0, "turns_done": 1}, {"t": 8.2918, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q2", "step": "harm"}, {"t": 8.2918, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q2", "step": "harm"}, {"t": 8.5707, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q3", "step": "clarify"}, {"t": 8.7162, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 0.6, "running": 8, "waiting": 0, "ttft_avg": 0.611, "e2e_avg": 1.144, "prompt_avg": 2415.7}}}, {"t": 8.8241, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q2", "step": "rewrite"}, {"t": 9.0902, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q3", "step": "generate"}, {"t": 9.1101, "ev": "turn_done", "srv": "LORA (8112)", "conv": 7, "turns_done": 1}, {"t": 9.1101, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q2", "step": "harm"}, {"t": 9.1101, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q2", "step": "harm"}, {"t": 9.562, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q2", "step": "retrieve"}, {"t": 9.6161, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q2", "step": "rewrite"}, {"t": 9.6209, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q2", "step": "answer?"}, {"t": 9.7441, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q2", "step": "retrieve"}, {"t": 9.795, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q2", "step": "answer?"}, {"t": 10.2245, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 5.6, "running": 8, "waiting": 0, "ttft_avg": 0.58, "e2e_avg": 1.198, "prompt_avg": 2706.6}}}, {"t": 10.4936, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q2", "step": "clarify"}, {"t": 10.5273, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q2", "step": "clarify"}, {"t": 11.1905, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q2", "step": "generate"}, {"t": 11.2348, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q2", "step": "retrieve"}, {"t": 11.283, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q2", "step": "answer?"}, {"t": 11.7333, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 11.1, "running": 8, "waiting": 0, "ttft_avg": 0.579, "e2e_avg": 1.18, "prompt_avg": 3151.7}}}, {"t": 12.0186, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q2", "step": "clarify"}, {"t": 12.5515, "ev": "turn_done", "srv": "LORA (8112)", "conv": 3, "turns_done": 3}, {"t": 12.5516, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q4", "step": "harm"}, {"t": 12.5516, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q4", "step": "harm"}, {"t": 12.8727, "ev": "turn_done", "srv": "LORA (8112)", "conv": 0, "turns_done": 2}, {"t": 12.8727, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q3", "step": "harm"}, {"t": 12.8727, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q3", "step": "harm"}, {"t": 12.8965, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q4", "step": "rewrite"}, {"t": 13.2413, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 13.8, "running": 8, "waiting": 0, "ttft_avg": 0.571, "e2e_avg": 1.22, "prompt_avg": 3430.0}}}, {"t": 14.4198, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q3", "step": "rewrite"}, {"t": 14.4284, "ev": "turn_done", "srv": "LORA (8112)", "conv": 7, "turns_done": 2}, {"t": 14.4285, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q3", "step": "harm"}, {"t": 14.4285, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q3", "step": "harm"}, {"t": 14.7492, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 16.4, "running": 8, "waiting": 0, "ttft_avg": 0.583, "e2e_avg": 1.248, "prompt_avg": 3652.1}}}, {"t": 15.1339, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q3", "step": "rewrite"}, {"t": 15.2941, "ev": "turn_done", "srv": "LORA (8112)", "conv": 6, "turns_done": 1}, {"t": 15.2941, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q2", "step": "harm"}, {"t": 15.2941, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q2", "step": "harm"}, {"t": 15.4988, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q4", "step": "retrieve"}, {"t": 15.5483, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q4", "step": "answer?"}, {"t": 16.1945, "ev": "turn_done", "srv": "LORA (8112)", "conv": 2, "turns_done": 1}, {"t": 16.1945, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q2", "step": "harm"}, {"t": 16.1945, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q2", "step": "harm"}, {"t": 16.1946, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q2", "step": "rewrite"}, {"t": 16.203, "ev": "turn_done", "srv": "LORA (8112)", "conv": 3, "turns_done": 4}, {"t": 16.203, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q5", "step": "harm"}, {"t": 16.203, "ev": "step_start", "srv": "LORA (8112)", "conv": 3, "turn": "Q5", "step": "harm"}, {"t": 16.2129, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q3", "step": "retrieve"}, {"t": 16.2588, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 18.2, "running": 4, "waiting": 0, "ttft_avg": 0.578, "e2e_avg": 1.562, "prompt_avg": 4028.0}}}, {"t": 16.2638, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q3", "step": "answer?"}, {"t": 17.2189, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q2", "step": "rewrite"}, {"t": 17.2248, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q3", "step": "retrieve"}, {"t": 17.2508, "ev": "turn_done", "srv": "LORA (8112)", "conv": 3, "turns_done": 5}, {"t": 17.2509, "ev": "conv_done", "srv": "LORA (8112)", "conv": 3, "wall_time": 17.2486}, {"t": 17.2509, "ev": "conv_start", "srv": "LORA (8112)", "conv": 8}, {"t": 17.2509, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q1", "step": "harm"}, {"t": 17.2509, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q1", "step": "harm"}, {"t": 17.2762, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q3", "step": "answer?"}, {"t": 17.2835, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q3", "step": "clarify"}, {"t": 17.7674, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 22.4, "running": 7, "waiting": 1, "ttft_avg": 0.575, "e2e_avg": 1.545, "prompt_avg": 4298.2}}}, {"t": 18.282, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q1", "step": "rewrite"}, {"t": 18.2935, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q3", "step": "clarify"}, {"t": 18.6337, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q3", "step": "generate"}, {"t": 18.921, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q2", "step": "retrieve"}, {"t": 18.9743, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q2", "step": "answer?"}, {"t": 19.2755, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 25.0, "running": 7, "waiting": 1, "ttft_avg": 0.573, "e2e_avg": 1.544, "prompt_avg": 4546.3}}}, {"t": 19.4246, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q3", "step": "generate"}, {"t": 19.9013, "ev": "turn_done", "srv": "LORA (8112)", "conv": 5, "turns_done": 1}, {"t": 19.9013, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q2", "step": "harm"}, {"t": 19.9013, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q2", "step": "harm"}, {"t": 20.0034, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q2", "step": "retrieve"}, {"t": 20.0508, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q2", "step": "answer?"}, {"t": 20.2306, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q2", "step": "clarify"}, {"t": 20.7834, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 25.2, "running": 7, "waiting": 1, "ttft_avg": 0.586, "e2e_avg": 1.736, "prompt_avg": 4787.4}}}, {"t": 21.6335, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q2", "step": "rewrite"}, {"t": 21.6391, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q2", "step": "clarify"}, {"t": 22.2915, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 26.2, "running": 8, "waiting": 0, "ttft_avg": 0.604, "e2e_avg": 1.734, "prompt_avg": 4883.3}}}, {"t": 22.4021, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q1", "step": "retrieve"}, {"t": 22.462, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q1", "step": "answer?"}, {"t": 22.8303, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q1", "step": "clarify"}, {"t": 22.8559, "ev": "turn_done", "srv": "LORA (8112)", "conv": 2, "turns_done": 2}, {"t": 22.8559, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q3", "step": "harm"}, {"t": 22.8559, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q3", "step": "harm"}, {"t": 22.9689, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q2", "step": "retrieve"}, {"t": 23.0114, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q2", "step": "answer?"}, {"t": 23.7997, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 26.6, "running": 8, "waiting": 0, "ttft_avg": 0.601, "e2e_avg": 1.735, "prompt_avg": 4912.5}}}, {"t": 23.9197, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q1", "step": "generate"}, {"t": 23.9482, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q3", "step": "rewrite"}, {"t": 23.9576, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q2", "step": "clarify"}, {"t": 24.9838, "ev": "turn_done", "srv": "LORA (8112)", "conv": 6, "turns_done": 2}, {"t": 24.9838, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q3", "step": "harm"}, {"t": 24.9838, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q3", "step": "harm"}, {"t": 25.3085, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 27.7, "running": 8, "waiting": 0, "ttft_avg": 0.607, "e2e_avg": 1.746, "prompt_avg": 5136.8}}}, {"t": 25.5613, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q3", "step": "rewrite"}, {"t": 26.0629, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q3", "step": "retrieve"}, {"t": 26.1144, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q3", "step": "answer?"}, {"t": 26.725, "ev": "turn_done", "srv": "LORA (8112)", "conv": 7, "turns_done": 3}, {"t": 26.725, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q4", "step": "harm"}, {"t": 26.725, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q4", "step": "harm"}, {"t": 26.7518, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q3", "step": "clarify"}, {"t": 26.769, "ev": "turn_done", "srv": "LORA (8112)", "conv": 1, "turns_done": 2}, {"t": 26.769, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q3", "step": "harm"}, {"t": 26.769, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q3", "step": "harm"}, {"t": 26.8171, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 30.4, "running": 6, "waiting": 0, "ttft_avg": 0.604, "e2e_avg": 1.942, "prompt_avg": 5555.4}}}, {"t": 27.072, "ev": "turn_done", "srv": "LORA (8112)", "conv": 4, "turns_done": 1}, {"t": 27.072, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q2", "step": "harm"}, {"t": 27.072, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q2", "step": "harm"}, {"t": 28.1037, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q4", "step": "rewrite"}, {"t": 28.3254, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 31.3, "running": 7, "waiting": 0, "ttft_avg": 0.614, "e2e_avg": 2.153, "prompt_avg": 5643.2}}}, {"t": 28.6374, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q3", "step": "generate"}, {"t": 28.7398, "ev": "turn_done", "srv": "LORA (8112)", "conv": 5, "turns_done": 2}, {"t": 28.7398, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q3", "step": "harm"}, {"t": 28.7399, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q3", "step": "harm"}, {"t": 28.7432, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q3", "step": "retrieve"}, {"t": 28.7609, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q3", "step": "rewrite"}, {"t": 28.8061, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q3", "step": "answer?"}, {"t": 28.9379, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q2", "step": "rewrite"}, {"t": 29.8334, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 31.8, "running": 6, "waiting": 2, "ttft_avg": 0.623, "e2e_avg": 2.183, "prompt_avg": 5914.1}}}, {"t": 30.8257, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q3", "step": "rewrite"}, {"t": 31.29, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q3", "step": "clarify"}, {"t": 31.3413, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 32.7, "running": 7, "waiting": 0, "ttft_avg": 0.665, "e2e_avg": 2.185, "prompt_avg": 6072.6}}}, {"t": 31.7193, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q4", "step": "retrieve"}, {"t": 31.7677, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q4", "step": "answer?"}, {"t": 32.4199, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q3", "step": "generate"}, {"t": 32.4491, "ev": "turn_done", "srv": "LORA (8112)", "conv": 7, "turns_done": 4}, {"t": 32.4491, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q5", "step": "harm"}, {"t": 32.4491, "ev": "step_start", "srv": "LORA (8112)", "conv": 7, "turn": "Q5", "step": "harm"}, {"t": 32.8492, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 33.9, "running": 7, "waiting": 1, "ttft_avg": 0.663, "e2e_avg": 2.173, "prompt_avg": 6399.8}}}, {"t": 33.5002, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q3", "step": "retrieve"}, {"t": 33.5004, "ev": "turn_done", "srv": "LORA (8112)", "conv": 7, "turns_done": 5}, {"t": 33.5004, "ev": "conv_done", "srv": "LORA (8112)", "conv": 7, "wall_time": 33.4966}, {"t": 33.5004, "ev": "conv_start", "srv": "LORA (8112)", "conv": 9}, {"t": 33.5004, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q1", "step": "harm"}, {"t": 33.5005, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q1", "step": "harm"}, {"t": 33.559, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q3", "step": "answer?"}, {"t": 33.5906, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q2", "step": "retrieve"}, {"t": 33.6397, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q3", "step": "retrieve"}, {"t": 33.6561, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q2", "step": "answer?"}, {"t": 33.7083, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q3", "step": "answer?"}, {"t": 33.7595, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q1", "step": "rewrite"}, {"t": 34.3573, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 36.4, "running": 7, "waiting": 1, "ttft_avg": 0.661, "e2e_avg": 2.198, "prompt_avg": 6469.9}}}, {"t": 34.6062, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q3", "step": "clarify"}, {"t": 34.9192, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q2", "step": "clarify"}, {"t": 35.1999, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q3", "step": "clarify"}, {"t": 35.8657, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 37.5, "running": 8, "waiting": 0, "ttft_avg": 0.668, "e2e_avg": 2.172, "prompt_avg": 6651.8}}}, {"t": 35.9823, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q3", "step": "generate"}, {"t": 36.0745, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q3", "step": "generate"}, {"t": 37.3738, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 36.8, "running": 8, "waiting": 0, "ttft_avg": 0.669, "e2e_avg": 2.153, "prompt_avg": 6791.3}}}, {"t": 37.5893, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q1", "step": "retrieve"}, {"t": 37.6525, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q1", "step": "answer?"}, {"t": 37.6665, "ev": "turn_done", "srv": "LORA (8112)", "conv": 0, "turns_done": 3}, {"t": 37.6665, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q4", "step": "harm"}, {"t": 37.6665, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q4", "step": "harm"}, {"t": 37.9031, "ev": "turn_done", "srv": "LORA (8112)", "conv": 4, "turns_done": 2}, {"t": 37.9031, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q3", "step": "harm"}, {"t": 37.9031, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q3", "step": "harm"}, {"t": 38.6095, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q1", "step": "clarify"}, {"t": 38.8829, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 36.9, "running": 8, "waiting": 0, "ttft_avg": 0.674, "e2e_avg": 2.311, "prompt_avg": 6801.0}}}, {"t": 39.1094, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q4", "step": "rewrite"}, {"t": 39.1498, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q3", "step": "rewrite"}, {"t": 39.6063, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q1", "step": "generate"}, {"t": 40.3909, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 37.3, "running": 8, "waiting": 0, "ttft_avg": 0.672, "e2e_avg": 2.283, "prompt_avg": 6884.6}}}, {"t": 40.469, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q4", "step": "retrieve"}, {"t": 40.5226, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q4", "step": "answer?"}, {"t": 41.0936, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q4", "step": "clarify"}, {"t": 41.1072, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q3", "step": "retrieve"}, {"t": 41.1674, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q3", "step": "answer?"}, {"t": 41.8988, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 39.1, "running": 8, "waiting": 0, "ttft_avg": 0.67, "e2e_avg": 2.259, "prompt_avg": 7070.5}}}, {"t": 42.1147, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q3", "step": "clarify"}, {"t": 42.6251, "ev": "turn_done", "srv": "LORA (8112)", "conv": 6, "turns_done": 3}, {"t": 42.6251, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q4", "step": "harm"}, {"t": 42.6251, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q4", "step": "harm"}, {"t": 42.6284, "ev": "turn_done", "srv": "LORA (8112)", "conv": 0, "turns_done": 4}, {"t": 42.6284, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q5", "step": "harm"}, {"t": 42.6285, "ev": "step_start", "srv": "LORA (8112)", "conv": 0, "turn": "Q5", "step": "harm"}, {"t": 43.0099, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q3", "step": "generate"}, {"t": 43.408, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 40.5, "running": 7, "waiting": 1, "ttft_avg": 0.67, "e2e_avg": 2.294, "prompt_avg": 7356.8}}}, {"t": 44.1651, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q4", "step": "rewrite"}, {"t": 44.4586, "ev": "turn_done", "srv": "LORA (8112)", "conv": 0, "turns_done": 5}, {"t": 44.4586, "ev": "conv_done", "srv": "LORA (8112)", "conv": 0, "wall_time": 44.4583}, {"t": 44.4586, "ev": "conv_start", "srv": "LORA (8112)", "conv": 10}, {"t": 44.4586, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q1", "step": "harm"}, {"t": 44.4586, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q1", "step": "harm"}, {"t": 44.9159, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 40.4, "running": 7, "waiting": 1, "ttft_avg": 0.68, "e2e_avg": 2.285, "prompt_avg": 7527.9}}}, {"t": 45.0635, "ev": "turn_done", "srv": "LORA (8112)", "conv": 8, "turns_done": 1}, {"t": 45.0635, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q2", "step": "harm"}, {"t": 45.0635, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q2", "step": "harm"}, {"t": 45.334, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q1", "step": "rewrite"}, {"t": 45.5235, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q2", "step": "rewrite"}, {"t": 46.0258, "ev": "turn_done", "srv": "LORA (8112)", "conv": 1, "turns_done": 3}, {"t": 46.0258, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q4", "step": "harm"}, {"t": 46.0259, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q4", "step": "harm"}, {"t": 46.0687, "ev": "turn_done", "srv": "LORA (8112)", "conv": 9, "turns_done": 1}, {"t": 46.0687, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q2", "step": "harm"}, {"t": 46.0687, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q2", "step": "harm"}, {"t": 46.0689, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q4", "step": "retrieve"}, {"t": 46.1293, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q4", "step": "answer?"}, {"t": 46.425, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 40.1, "running": 7, "waiting": 1, "ttft_avg": 0.672, "e2e_avg": 2.488, "prompt_avg": 7533.1}}}, {"t": 46.5298, "ev": "turn_done", "srv": "LORA (8112)", "conv": 5, "turns_done": 3}, {"t": 46.5298, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q4", "step": "harm"}, {"t": 46.5298, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q4", "step": "harm"}, {"t": 47.4752, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q4", "step": "rewrite"}, {"t": 47.933, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 41.3, "running": 8, "waiting": 0, "ttft_avg": 0.677, "e2e_avg": 2.539, "prompt_avg": 7620.8}}}, {"t": 47.9469, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q2", "step": "rewrite"}, {"t": 48.0976, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q1", "step": "retrieve"}, {"t": 48.154, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q1", "step": "answer?"}, {"t": 48.2655, "ev": "turn_done", "srv": "LORA (8112)", "conv": 6, "turns_done": 4}, {"t": 48.2655, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q5", "step": "harm"}, {"t": 48.2655, "ev": "step_start", "srv": "LORA (8112)", "conv": 6, "turn": "Q5", "step": "harm"}, {"t": 48.7047, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q4", "step": "rewrite"}, {"t": 49.3005, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q2", "step": "retrieve"}, {"t": 49.3088, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q1", "step": "clarify"}, {"t": 49.3402, "ev": "turn_done", "srv": "LORA (8112)", "conv": 6, "turns_done": 5}, {"t": 49.3402, "ev": "conv_done", "srv": "LORA (8112)", "conv": 6, "wall_time": 49.3368}, {"t": 49.3403, "ev": "conv_start", "srv": "LORA (8112)", "conv": 11}, {"t": 49.3403, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q1", "step": "harm"}, {"t": 49.3403, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q1", "step": "harm"}, {"t": 49.3631, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q2", "step": "answer?"}, {"t": 49.4411, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 42.0, "running": 6, "waiting": 0, "ttft_avg": 0.682, "e2e_avg": 2.519, "prompt_avg": 7750.5}}}, {"t": 50.0369, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q1", "step": "rewrite"}, {"t": 50.0478, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q1", "step": "generate"}, {"t": 50.0609, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q2", "step": "clarify"}, {"t": 50.2935, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q2", "step": "retrieve"}, {"t": 50.3402, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q2", "step": "answer?"}, {"t": 50.9499, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 42.0, "running": 8, "waiting": 0, "ttft_avg": 0.67, "e2e_avg": 2.48, "prompt_avg": 7681.9}}}, {"t": 51.0433, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q4", "step": "retrieve"}, {"t": 51.0828, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q4", "step": "retrieve"}, {"t": 51.0917, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q4", "step": "answer?"}, {"t": 51.0967, "ev": "turn_done", "srv": "LORA (8112)", "conv": 9, "turns_done": 2}, {"t": 51.0967, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q3", "step": "harm"}, {"t": 51.0967, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q3", "step": "harm"}, {"t": 51.1517, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q4", "step": "answer?"}, {"t": 52.2904, "ev": "turn_done", "srv": "LORA (8112)", "conv": 5, "turns_done": 4}, {"t": 52.2904, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q5", "step": "harm"}, {"t": 52.2904, "ev": "step_start", "srv": "LORA (8112)", "conv": 5, "turn": "Q5", "step": "harm"}, {"t": 52.3053, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q3", "step": "rewrite"}, {"t": 52.335, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q4", "step": "clarify"}, {"t": 52.458, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.4, "running": 8, "waiting": 0, "ttft_avg": 0.665, "e2e_avg": 2.45, "prompt_avg": 7942.7}}}, {"t": 53.0822, "ev": "turn_done", "srv": "LORA (8112)", "conv": 5, "turns_done": 5}, {"t": 53.0822, "ev": "conv_done", "srv": "LORA (8112)", "conv": 5, "wall_time": 53.0793}, {"t": 53.0822, "ev": "conv_start", "srv": "LORA (8112)", "conv": 12}, {"t": 53.0822, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q1", "step": "harm"}, {"t": 53.0822, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q1", "step": "harm"}, {"t": 53.1869, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q4", "step": "generate"}, {"t": 53.2282, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q1", "step": "rewrite"}, {"t": 53.2381, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q1", "step": "retrieve"}, {"t": 53.2991, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q1", "step": "answer?"}, {"t": 53.9661, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.4, "running": 6, "waiting": 2, "ttft_avg": 0.661, "e2e_avg": 2.419, "prompt_avg": 7969.2}}}, {"t": 54.3995, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q3", "step": "retrieve"}, {"t": 54.4278, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q1", "step": "clarify"}, {"t": 54.4594, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q3", "step": "answer?"}, {"t": 55.2331, "ev": "turn_done", "srv": "LORA (8112)", "conv": 8, "turns_done": 2}, {"t": 55.2331, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q3", "step": "harm"}, {"t": 55.2331, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q3", "step": "harm"}, {"t": 55.4751, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.0, "running": 8, "waiting": 0, "ttft_avg": 0.666, "e2e_avg": 2.426, "prompt_avg": 7954.4}}}, {"t": 55.5573, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q1", "step": "generate"}, {"t": 55.7044, "ev": "turn_done", "srv": "LORA (8112)", "conv": 9, "turns_done": 3}, {"t": 55.7044, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q4", "step": "harm"}, {"t": 55.7044, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q4", "step": "harm"}, {"t": 55.984, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q3", "step": "rewrite"}, {"t": 56.0484, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q4", "step": "rewrite"}, {"t": 56.4314, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q1", "step": "retrieve"}, {"t": 56.4704, "ev": "turn_done", "srv": "LORA (8112)", "conv": 2, "turns_done": 3}, {"t": 56.4704, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q4", "step": "harm"}, {"t": 56.4704, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q4", "step": "harm"}, {"t": 56.4889, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q1", "step": "answer?"}, {"t": 56.9841, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.6, "running": 7, "waiting": 1, "ttft_avg": 0.657, "e2e_avg": 2.547, "prompt_avg": 7958.1}}}, {"t": 57.4058, "ev": "turn_done", "srv": "LORA (8112)", "conv": 1, "turns_done": 4}, {"t": 57.4058, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q5", "step": "harm"}, {"t": 57.4058, "ev": "step_start", "srv": "LORA (8112)", "conv": 1, "turn": "Q5", "step": "harm"}, {"t": 57.4225, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q1", "step": "clarify"}, {"t": 57.4227, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q4", "step": "rewrite"}, {"t": 57.4604, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q4", "step": "retrieve"}, {"t": 57.51, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q4", "step": "answer?"}, {"t": 58.4932, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.9, "running": 7, "waiting": 1, "ttft_avg": 0.661, "e2e_avg": 2.53, "prompt_avg": 8051.7}}}, {"t": 59.0363, "ev": "turn_done", "srv": "LORA (8112)", "conv": 1, "turns_done": 5}, {"t": 59.0363, "ev": "conv_done", "srv": "LORA (8112)", "conv": 1, "wall_time": 59.0351}, {"t": 59.0364, "ev": "conv_start", "srv": "LORA (8112)", "conv": 13}, {"t": 59.0364, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q1", "step": "harm"}, {"t": 59.0364, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q1", "step": "harm"}, {"t": 59.3574, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q1", "step": "generate"}, {"t": 59.5041, "ev": "turn_done", "srv": "LORA (8112)", "conv": 9, "turns_done": 4}, {"t": 59.5041, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q5", "step": "harm"}, {"t": 59.5041, "ev": "step_start", "srv": "LORA (8112)", "conv": 9, "turn": "Q5", "step": "harm"}, {"t": 59.6092, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q1", "step": "rewrite"}, {"t": 59.7259, "ev": "turn_done", "srv": "LORA (8112)", "conv": 10, "turns_done": 1}, {"t": 59.7259, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q2", "step": "harm"}, {"t": 59.7259, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q2", "step": "harm"}, {"t": 59.7786, "ev": "turn_done", "srv": "LORA (8112)", "conv": 9, "turns_done": 5}, {"t": 59.7787, "ev": "conv_done", "srv": "LORA (8112)", "conv": 9, "wall_time": 26.2782}, {"t": 59.7787, "ev": "conv_start", "srv": "LORA (8112)", "conv": 14}, {"t": 59.7787, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q1", "step": "harm"}, {"t": 59.7787, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q1", "step": "harm"}, {"t": 60.0013, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.8, "running": 8, "waiting": 0, "ttft_avg": 0.662, "e2e_avg": 2.535, "prompt_avg": 8049.6}}}, {"t": 60.1424, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q2", "step": "rewrite"}, {"t": 60.1427, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q1", "step": "rewrite"}, {"t": 60.4722, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q4", "step": "retrieve"}, {"t": 60.519, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q3", "step": "retrieve"}, {"t": 60.5266, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q4", "step": "answer?"}, {"t": 60.6108, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q3", "step": "answer?"}, {"t": 61.5101, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 45.3, "running": 8, "waiting": 0, "ttft_avg": 0.654, "e2e_avg": 2.525, "prompt_avg": 8057.4}}}, {"t": 61.5811, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q1", "step": "retrieve"}, {"t": 61.5823, "ev": "turn_done", "srv": "LORA (8112)", "conv": 2, "turns_done": 4}, {"t": 61.5823, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q5", "step": "harm"}, {"t": 61.5824, "ev": "step_start", "srv": "LORA (8112)", "conv": 2, "turn": "Q5", "step": "harm"}, {"t": 61.6063, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q3", "step": "clarify"}, {"t": 61.6476, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q1", "step": "answer?"}, {"t": 61.841, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q2", "step": "retrieve"}, {"t": 61.8955, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q2", "step": "answer?"}, {"t": 62.3661, "ev": "turn_done", "srv": "LORA (8112)", "conv": 2, "turns_done": 5}, {"t": 62.3662, "ev": "conv_done", "srv": "LORA (8112)", "conv": 2, "wall_time": 62.3646}, {"t": 62.3662, "ev": "conv_start", "srv": "LORA (8112)", "conv": 15}, {"t": 62.3662, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q1", "step": "harm"}, {"t": 62.3662, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q1", "step": "harm"}, {"t": 62.6631, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q1", "step": "clarify"}, {"t": 62.6769, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q3", "step": "generate"}, {"t": 62.7159, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q2", "step": "clarify"}, {"t": 62.9072, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q1", "step": "rewrite"}, {"t": 62.9074, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q1", "step": "retrieve"}, {"t": 62.9751, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q1", "step": "answer?"}, {"t": 63.0179, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 45.5, "running": 5, "waiting": 1, "ttft_avg": 0.65, "e2e_avg": 2.458, "prompt_avg": 8108.8}}}, {"t": 63.852, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q1", "step": "generate"}, {"t": 64.4961, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q1", "step": "clarify"}, {"t": 64.5263, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 45.3, "running": 7, "waiting": 0, "ttft_avg": 0.661, "e2e_avg": 2.447, "prompt_avg": 8074.0}}}, {"t": 64.8989, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q1", "step": "generate"}, {"t": 65.2553, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q1", "step": "retrieve"}, {"t": 65.3049, "ev": "turn_done", "srv": "LORA (8112)", "conv": 11, "turns_done": 1}, {"t": 65.3049, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q2", "step": "harm"}, {"t": 65.3049, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q2", "step": "harm"}, {"t": 65.3106, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q1", "step": "answer?"}, {"t": 65.9713, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q2", "step": "rewrite"}, {"t": 65.981, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q1", "step": "clarify"}, {"t": 66.0342, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.5, "running": 7, "waiting": 0, "ttft_avg": 0.656, "e2e_avg": 2.455, "prompt_avg": 7974.3}}}, {"t": 66.2145, "ev": "turn_done", "srv": "LORA (8112)", "conv": 10, "turns_done": 2}, {"t": 66.2145, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q3", "step": "harm"}, {"t": 66.2145, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q3", "step": "harm"}, {"t": 66.9469, "ev": "turn_done", "srv": "LORA (8112)", "conv": 13, "turns_done": 1}, {"t": 66.9469, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q2", "step": "harm"}, {"t": 66.9469, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q2", "step": "harm"}, {"t": 66.9471, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q1", "step": "generate"}, {"t": 66.9633, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q3", "step": "rewrite"}, {"t": 67.5429, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.2, "running": 8, "waiting": 0, "ttft_avg": 0.653, "e2e_avg": 2.447, "prompt_avg": 7953.9}}}, {"t": 67.6414, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q2", "step": "retrieve"}, {"t": 67.6928, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q2", "step": "answer?"}, {"t": 67.8929, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q2", "step": "rewrite"}, {"t": 68.4122, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q2", "step": "clarify"}, {"t": 69.0508, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.2, "running": 8, "waiting": 0, "ttft_avg": 0.65, "e2e_avg": 2.427, "prompt_avg": 7942.3}}}, {"t": 69.0544, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q2", "step": "retrieve"}, {"t": 69.1031, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q2", "step": "answer?"}, {"t": 69.1306, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q3", "step": "retrieve"}, {"t": 69.189, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q3", "step": "answer?"}, {"t": 69.85, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q2", "step": "clarify"}, {"t": 69.8767, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q3", "step": "clarify"}, {"t": 70.5588, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.5, "running": 8, "waiting": 0, "ttft_avg": 0.648, "e2e_avg": 2.403, "prompt_avg": 7968.0}}}, {"t": 70.6228, "ev": "turn_done", "srv": "LORA (8112)", "conv": 11, "turns_done": 2}, {"t": 70.6228, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q3", "step": "harm"}, {"t": 70.6228, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q3", "step": "harm"}, {"t": 70.6883, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q3", "step": "generate"}, {"t": 71.3955, "ev": "turn_done", "srv": "LORA (8112)", "conv": 14, "turns_done": 1}, {"t": 71.3955, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q2", "step": "harm"}, {"t": 71.3955, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q2", "step": "harm"}, {"t": 71.8023, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q3", "step": "rewrite"}, {"t": 72.067, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.1, "running": 8, "waiting": 0, "ttft_avg": 0.65, "e2e_avg": 2.408, "prompt_avg": 8011.5}}}, {"t": 72.5565, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q2", "step": "rewrite"}, {"t": 73.2136, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q2", "step": "retrieve"}, {"t": 73.2397, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q3", "step": "retrieve"}, {"t": 73.2613, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q2", "step": "answer?"}, {"t": 73.3172, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q3", "step": "answer?"}, {"t": 73.5763, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.2, "running": 8, "waiting": 0, "ttft_avg": 0.649, "e2e_avg": 2.39, "prompt_avg": 8000.7}}}, {"t": 73.8737, "ev": "turn_done", "srv": "LORA (8112)", "conv": 13, "turns_done": 2}, {"t": 73.8737, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q3", "step": "harm"}, {"t": 73.8737, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q3", "step": "harm"}, {"t": 74.2627, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q2", "step": "clarify"}, {"t": 74.6078, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q3", "step": "clarify"}, {"t": 75.0844, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.5, "running": 8, "waiting": 0, "ttft_avg": 0.649, "e2e_avg": 2.385, "prompt_avg": 8056.0}}}, {"t": 75.3369, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q3", "step": "rewrite"}, {"t": 75.3404, "ev": "turn_done", "srv": "LORA (8112)", "conv": 12, "turns_done": 1}, {"t": 75.3404, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q2", "step": "harm"}, {"t": 75.3404, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q2", "step": "harm"}, {"t": 75.7675, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q3", "step": "generate"}, {"t": 76.5931, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.0, "running": 8, "waiting": 0, "ttft_avg": 0.648, "e2e_avg": 2.437, "prompt_avg": 8084.0}}}, {"t": 76.721, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q2", "step": "rewrite"}, {"t": 76.9881, "ev": "turn_done", "srv": "LORA (8112)", "conv": 15, "turns_done": 1}, {"t": 76.9881, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q2", "step": "harm"}, {"t": 76.9882, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q2", "step": "harm"}, {"t": 77.5807, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q2", "step": "rewrite"}, {"t": 77.8406, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q3", "step": "retrieve"}, {"t": 77.8914, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q3", "step": "answer?"}, {"t": 78.1013, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 43.8, "running": 8, "waiting": 0, "ttft_avg": 0.647, "e2e_avg": 2.458, "prompt_avg": 8048.9}}}, {"t": 78.3851, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q2", "step": "retrieve"}, {"t": 78.386, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q3", "step": "clarify"}, {"t": 78.4251, "ev": "turn_done", "srv": "LORA (8112)", "conv": 14, "turns_done": 2}, {"t": 78.4251, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q3", "step": "harm"}, {"t": 78.4252, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q3", "step": "harm"}, {"t": 78.4379, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q2", "step": "answer?"}, {"t": 79.5431, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q2", "step": "retrieve"}, {"t": 79.5667, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q3", "step": "generate"}, {"t": 79.5995, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q2", "step": "clarify"}, {"t": 79.5997, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q3", "step": "rewrite"}, {"t": 79.6132, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.0, "running": 4, "waiting": 0, "ttft_avg": 0.648, "e2e_avg": 2.435, "prompt_avg": 8102.2}}}, {"t": 79.6204, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q2", "step": "answer?"}, {"t": 81.1213, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 43.8, "running": 8, "waiting": 0, "ttft_avg": 0.651, "e2e_avg": 2.435, "prompt_avg": 8102.2}}}, {"t": 81.5108, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q2", "step": "clarify"}, {"t": 82.0073, "ev": "turn_done", "srv": "LORA (8112)", "conv": 11, "turns_done": 3}, {"t": 82.0073, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q4", "step": "harm"}, {"t": 82.0074, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q4", "step": "harm"}, {"t": 82.6296, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.0, "running": 8, "waiting": 0, "ttft_avg": 0.659, "e2e_avg": 2.449, "prompt_avg": 8137.1}}}, {"t": 82.6696, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q4", "step": "rewrite"}, {"t": 83.2878, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q3", "step": "retrieve"}, {"t": 83.3298, "ev": "turn_done", "srv": "LORA (8112)", "conv": 12, "turns_done": 2}, {"t": 83.3299, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q3", "step": "harm"}, {"t": 83.3299, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q3", "step": "harm"}, {"t": 83.3476, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q3", "step": "answer?"}, {"t": 83.401, "ev": "turn_done", "srv": "LORA (8112)", "conv": 4, "turns_done": 3}, {"t": 83.401, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q4", "step": "harm"}, {"t": 83.401, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q4", "step": "harm"}, {"t": 83.651, "ev": "turn_done", "srv": "LORA (8112)", "conv": 13, "turns_done": 3}, {"t": 83.651, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q4", "step": "harm"}, {"t": 83.651, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q4", "step": "harm"}, {"t": 84.138, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.0, "running": 7, "waiting": 1, "ttft_avg": 0.658, "e2e_avg": 2.618, "prompt_avg": 8234.9}}}, {"t": 84.6075, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q3", "step": "rewrite"}, {"t": 84.7507, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q3", "step": "clarify"}, {"t": 85.6461, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.1, "running": 7, "waiting": 1, "ttft_avg": 0.664, "e2e_avg": 2.607, "prompt_avg": 8272.6}}}, {"t": 85.9631, "ev": "turn_done", "srv": "LORA (8112)", "conv": 15, "turns_done": 2}, {"t": 85.9631, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q3", "step": "harm"}, {"t": 85.9632, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q3", "step": "harm"}, {"t": 86.2853, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q4", "step": "retrieve"}, {"t": 86.2855, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q4", "step": "rewrite"}, {"t": 86.3461, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q4", "step": "answer?"}, {"t": 86.5809, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q4", "step": "rewrite"}, {"t": 87.1543, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.0, "running": 6, "waiting": 2, "ttft_avg": 0.678, "e2e_avg": 2.621, "prompt_avg": 8371.0}}}, {"t": 87.3324, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q3", "step": "generate"}, {"t": 87.636, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q3", "step": "rewrite"}, {"t": 88.6625, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.4, "running": 6, "waiting": 2, "ttft_avg": 0.688, "e2e_avg": 2.617, "prompt_avg": 8407.7}}}, {"t": 89.1722, "ev": "turn_done", "srv": "LORA (8112)", "conv": 11, "turns_done": 4}, {"t": 89.1722, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q5", "step": "harm"}, {"t": 89.1722, "ev": "step_start", "srv": "LORA (8112)", "conv": 11, "turn": "Q5", "step": "harm"}, {"t": 90.0953, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q3", "step": "retrieve"}, {"t": 90.147, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q3", "step": "answer?"}, {"t": 90.1714, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.5, "running": 7, "waiting": 0, "ttft_avg": 0.708, "e2e_avg": 2.629, "prompt_avg": 8470.6}}}, {"t": 90.173, "ev": "turn_done", "srv": "LORA (8112)", "conv": 11, "turns_done": 5}, {"t": 90.173, "ev": "conv_done", "srv": "LORA (8112)", "conv": 11, "wall_time": 40.8327}, {"t": 90.6769, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q4", "step": "retrieve"}, {"t": 90.6904, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q3", "step": "clarify"}, {"t": 90.7429, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q4", "step": "answer?"}, {"t": 90.748, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q4", "step": "retrieve"}, {"t": 90.7993, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q4", "step": "answer?"}, {"t": 91.6799, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.4, "running": 6, "waiting": 1, "ttft_avg": 0.706, "e2e_avg": 2.627, "prompt_avg": 8581.4}}}, {"t": 92.1305, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q3", "step": "generate"}, {"t": 93.0245, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q3", "step": "retrieve"}, {"t": 93.069, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q3", "step": "answer?"}, {"t": 93.188, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 44.4, "running": 6, "waiting": 0, "ttft_avg": 0.717, "e2e_avg": 2.634, "prompt_avg": 8613.5}}}, {"t": 93.363, "ev": "turn_done", "srv": "LORA (8112)", "conv": 4, "turns_done": 4}, {"t": 93.363, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q5", "step": "harm"}, {"t": 93.363, "ev": "step_start", "srv": "LORA (8112)", "conv": 4, "turn": "Q5", "step": "harm"}, {"t": 93.7592, "ev": "turn_done", "srv": "LORA (8112)", "conv": 13, "turns_done": 4}, {"t": 93.7592, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q5", "step": "harm"}, {"t": 93.7592, "ev": "step_start", "srv": "LORA (8112)", "conv": 13, "turn": "Q5", "step": "harm"}, {"t": 94.374, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q3", "step": "clarify"}, {"t": 94.4042, "ev": "turn_done", "srv": "LORA (8112)", "conv": 4, "turns_done": 5}, {"t": 94.4042, "ev": "conv_done", "srv": "LORA (8112)", "conv": 4, "wall_time": 94.4015}, {"t": 94.4052, "ev": "turn_done", "srv": "LORA (8112)", "conv": 13, "turns_done": 5}, {"t": 94.4052, "ev": "conv_done", "srv": "LORA (8112)", "conv": 13, "wall_time": 35.3689}, {"t": 94.6963, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 45.3, "running": 5, "waiting": 0, "ttft_avg": 0.723, "e2e_avg": 2.616, "prompt_avg": 8773.7}}}, {"t": 94.9525, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q3", "step": "generate"}, {"t": 96.2049, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 45.1, "running": 5, "waiting": 0, "ttft_avg": 0.723, "e2e_avg": 2.608, "prompt_avg": 8799.0}}}, {"t": 96.2517, "ev": "turn_done", "srv": "LORA (8112)", "conv": 8, "turns_done": 3}, {"t": 96.2517, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q4", "step": "harm"}, {"t": 96.2517, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q4", "step": "harm"}, {"t": 96.8623, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q4", "step": "rewrite"}, {"t": 97.6537, "ev": "turn_done", "srv": "LORA (8112)", "conv": 10, "turns_done": 3}, {"t": 97.6537, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q4", "step": "harm"}, {"t": 97.6537, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q4", "step": "harm"}, {"t": 97.7128, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 45.3, "running": 4, "waiting": 0, "ttft_avg": 0.721, "e2e_avg": 2.81, "prompt_avg": 8862.8}}}, {"t": 98.0095, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q4", "step": "retrieve"}, {"t": 98.0583, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q4", "step": "answer?"}, {"t": 98.6805, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q4", "step": "rewrite"}, {"t": 98.7152, "ev": "turn_done", "srv": "LORA (8112)", "conv": 8, "turns_done": 4}, {"t": 98.7152, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q5", "step": "harm"}, {"t": 98.7152, "ev": "step_start", "srv": "LORA (8112)", "conv": 8, "turn": "Q5", "step": "harm"}, {"t": 99.2209, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 46.1, "running": 5, "waiting": 0, "ttft_avg": 0.718, "e2e_avg": 2.789, "prompt_avg": 8953.6}}}, {"t": 99.2412, "ev": "turn_done", "srv": "LORA (8112)", "conv": 8, "turns_done": 5}, {"t": 99.2412, "ev": "conv_done", "srv": "LORA (8112)", "conv": 8, "wall_time": 81.9904}, {"t": 99.439, "ev": "turn_done", "srv": "LORA (8112)", "conv": 15, "turns_done": 3}, {"t": 99.439, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q4", "step": "harm"}, {"t": 99.439, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q4", "step": "harm"}, {"t": 99.4836, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q4", "step": "retrieve"}, {"t": 99.5321, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q4", "step": "answer?"}, {"t": 100.4392, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q4", "step": "rewrite"}, {"t": 100.4602, "ev": "turn_done", "srv": "LORA (8112)", "conv": 10, "turns_done": 4}, {"t": 100.4602, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q5", "step": "harm"}, {"t": 100.4602, "ev": "step_start", "srv": "LORA (8112)", "conv": 10, "turn": "Q5", "step": "harm"}, {"t": 100.729, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 46.5, "running": 3, "waiting": 1, "ttft_avg": 0.718, "e2e_avg": 2.766, "prompt_avg": 9081.4}}}, {"t": 101.0011, "ev": "turn_done", "srv": "LORA (8112)", "conv": 10, "turns_done": 5}, {"t": 101.0012, "ev": "conv_done", "srv": "LORA (8112)", "conv": 10, "wall_time": 56.5426}, {"t": 101.2511, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q4", "step": "retrieve"}, {"t": 101.2616, "ev": "turn_done", "srv": "LORA (8112)", "conv": 14, "turns_done": 3}, {"t": 101.2616, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q4", "step": "harm"}, {"t": 101.2617, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q4", "step": "harm"}, {"t": 101.3024, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q4", "step": "answer?"}, {"t": 102.2375, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 47.1, "running": 3, "waiting": 0, "ttft_avg": 0.715, "e2e_avg": 2.791, "prompt_avg": 9143.4}}}, {"t": 102.3367, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q4", "step": "rewrite"}, {"t": 102.3561, "ev": "turn_done", "srv": "LORA (8112)", "conv": 15, "turns_done": 4}, {"t": 102.3561, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q5", "step": "harm"}, {"t": 102.3561, "ev": "step_start", "srv": "LORA (8112)", "conv": 15, "turn": "Q5", "step": "harm"}, {"t": 102.8988, "ev": "turn_done", "srv": "LORA (8112)", "conv": 15, "turns_done": 5}, {"t": 102.8988, "ev": "conv_done", "srv": "LORA (8112)", "conv": 15, "wall_time": 40.5326}, {"t": 103.2056, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q4", "step": "retrieve"}, {"t": 103.2616, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q4", "step": "answer?"}, {"t": 103.7456, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 47.7, "running": 2, "waiting": 0, "ttft_avg": 0.715, "e2e_avg": 2.764, "prompt_avg": 9256.7}}}, {"t": 103.8603, "ev": "turn_done", "srv": "LORA (8112)", "conv": 14, "turns_done": 4}, {"t": 103.8603, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q5", "step": "harm"}, {"t": 103.8603, "ev": "step_start", "srv": "LORA (8112)", "conv": 14, "turn": "Q5", "step": "harm"}, {"t": 104.0019, "ev": "turn_done", "srv": "LORA (8112)", "conv": 14, "turns_done": 5}, {"t": 104.0019, "ev": "conv_done", "srv": "LORA (8112)", "conv": 14, "wall_time": 44.2232}, {"t": 105.2403, "ev": "turn_done", "srv": "LORA (8112)", "conv": 12, "turns_done": 3}, {"t": 105.2403, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q4", "step": "harm"}, {"t": 105.2403, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q4", "step": "harm"}, {"t": 105.2546, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 48.0, "running": 0, "waiting": 0, "ttft_avg": 0.712, "e2e_avg": 2.784, "prompt_avg": 9335.7}}}, {"t": 105.7754, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q4", "step": "rewrite"}, {"t": 106.5733, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q4", "step": "retrieve"}, {"t": 106.6267, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q4", "step": "answer?"}, {"t": 106.7628, "ev": "metrics", "vllm": {"LORA (8112)": {"kv_hit": 48.4, "running": 1, "waiting": 0, "ttft_avg": 0.71, "e2e_avg": 2.769, "prompt_avg": 9379.6}}}, {"t": 107.1692, "ev": "turn_done", "srv": "LORA (8112)", "conv": 12, "turns_done": 4}, {"t": 107.1692, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q5", "step": "harm"}, {"t": 107.1692, "ev": "step_start", "srv": "LORA (8112)", "conv": 12, "turn": "Q5", "step": "harm"}, {"t": 107.2945, "ev": "turn_done", "srv": "LORA (8112)", "conv": 12, "turns_done": 5}, {"t": 107.2945, "ev": "conv_done", "srv": "LORA (8112)", "conv": 12, "wall_time": 54.2123}]}; // <<RACE_EVENTS>>
+
+// ── Constants ────────────────────────────────────────────────────────────────
+const BAR_WIDTH = 20;
+
+const STEP_COLORS = {
+  'harm':     '#4fc3f7',
+  'rewrite':  '#80deea',
+  'retrieve': '#fff176',
+  'answer?':  '#e040fb',
+  'clarify':  '#e040fb',
+  'generate': '#ef5350',
+  'done':     '#66bb6a',
+};
+const DIM    = '#3a3a3a';
+const NUMCOL = '#666666';
+
+// ── Playback state ───────────────────────────────────────────────────────────
+let eventData    = null;
+let state        = [];        // state[srvIdx][convIdx]
+let playbackTime = 0;
+let nextEventIdx = 0;
+let playing      = false;
+let speed        = 5;
+let lastRealTime = null;
+let raceDuration = 0;
+let numRuns      = 32;
+let metricsState = null;  // most recent metrics event
+
+// ── DOM refs ─────────────────────────────────────────────────────────────────
+const playBtn      = document.getElementById('playBtn');
+const scrubber     = document.getElementById('scrubber');
+const scrubberTime = document.getElementById('scrubberTime');
+const elapsedEl    = document.getElementById('elapsed');
+const modeBadge    = document.getElementById('modeBadge');
+const errorEl      = document.getElementById('error');
+
+// ── Data loading ─────────────────────────────────────────────────────────────
+async function loadData() {
+  if (RACE_EVENTS_EMBEDDED) return RACE_EVENTS_EMBEDDED;
+
+  // Real telemetry file
+  try {
+    const r = await fetch('race_events.json');
+    if (r.ok) return await r.json();
+  } catch (_) {}
+
+  // Synthesize from aggregate results
+  try {
+    const r = await fetch('race_results.json');
+    if (r.ok) return synthesizeEvents(await r.json());
+  } catch (_) {}
+
+  throw new Error('No data found — run bench_pipeline_race.py first, or serve this directory over HTTP.');
+}
+
+// ── Synthesis from race_results.json ─────────────────────────────────────────
+function computeStartTimes(convWalls, concurrency) {
+  const n = convWalls.length;
+  const starts = new Array(n).fill(0);
+  if (n <= concurrency) return starts;  // all start at 0
+
+  // Greedy slot scheduling: track finish times as a sorted array.
+  const slots = convWalls.slice(0, concurrency)
+                          .map((w) => w)
+                          .sort((a, b) => a - b);
+
+  for (let i = concurrency; i < n; i++) {
+    const earliest = slots.shift();
+    starts[i] = earliest;
+    const fin = earliest + convWalls[i];
+    // Insert fin into sorted slots
+    let lo = 0, hi = slots.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (slots[mid] < fin) lo = mid + 1; else hi = mid; }
+    slots.splice(lo, 0, fin);
+  }
+  return starts;
+}
+
+function synthesizeEvents(raceData) {
+  const STEPS_FOR_EXIT = {
+    harm_blocked:        ['harm'],
+    unanswerable:        ['harm', 'rewrite', 'retrieve', 'answer?'],
+    needs_clarification: ['harm', 'rewrite', 'retrieve', 'answer?', 'clarify'],
+    full_pipeline:       ['harm', 'rewrite', 'retrieve', 'answer?', 'clarify', 'generate'],
+  };
+  const STEP_FRAC = {
+    harm: 0.14, rewrite: 0.19, retrieve: 0.04,
+    'answer?': 0.18, clarify: 0.20, generate: 0.36,
+  };
+
+  const serverNames = Object.keys(raceData.servers);
+  const concurrency = raceData.metadata.concurrency;
+  const TURNS       = 5;
+  const events      = [];
+
+  serverNames.forEach((srvName, srvIdx) => {
+    const srv       = raceData.servers[srvName];
+    const convWalls = srv.conv_walls;
+    const work      = srv.work || [];
+    const n         = convWalls.length;
+    const starts    = computeStartTimes(convWalls, concurrency);
+
+    for (let i = 0; i < n; i++) {
+      const cs = starts[i];
+      const cw = convWalls[i];
+      events.push({t: r4(cs), ev: 'conv_start', srv: srvName, conv: i});
+
+      let t = cs;
+      for (let j = 0; j < TURNS; j++) {
+        const wi    = work[TURNS * i + j] || {};
+        const exit  = wi.exit || 'full_pipeline';
+        const steps = STEPS_FOR_EXIT[exit] || STEPS_FOR_EXIT.full_pipeline;
+        const td    = cw / TURNS;
+        const tot   = steps.reduce((s, st) => s + (STEP_FRAC[st] || 0.1), 0);
+
+        for (const step of steps) {
+          events.push({t: r4(t), ev: 'step_start', srv: srvName, conv: i,
+                       turn: `T${j + 1}`, step});
+          t += td * (STEP_FRAC[step] || 0.1) / tot;
+        }
+        events.push({t: r4(t), ev: 'turn_done', srv: srvName, conv: i, turns_done: j + 1});
+      }
+      events.push({t: r4(cs + cw), ev: 'conv_done', srv: srvName, conv: i, wall_time: cw});
+    }
+  });
+
+  events.sort((a, b) => a.t - b.t);
+  return {
+    servers:   serverNames,
+    events,
+    race_wall: raceData.metadata.race_wall,
+    metadata:  raceData.metadata,
+    simulated: true,
+  };
+}
+
+function r4(v) { return Math.round(v * 10000) / 10000; }
+
+// ── State management ─────────────────────────────────────────────────────────
+function initState() {
+  state = Array.from({length: eventData.servers.length}, () =>
+    Array.from({length: numRuns}, () =>
+      ({turns_done: 0, step: '', turn: '', done: false, wall_time: 0})
+    )
+  );
+}
+
+function resetPlayback() {
+  playbackTime = 0;
+  nextEventIdx = 0;
+  metricsState = null;
+  initState();
+}
+
+function applyEvent(evt) {
+  // metrics events have no srv/conv — handle before the per-conv guard
+  if (evt.ev === 'metrics') {
+    metricsState = evt;
+    return;
+  }
+
+  const srvIdx = typeof evt.srv === 'number'
+    ? evt.srv
+    : eventData.servers.indexOf(evt.srv);
+  if (srvIdx < 0 || srvIdx >= state.length) return;
+  if (evt.conv < 0 || evt.conv >= state[srvIdx].length) return;
+  const s = state[srvIdx][evt.conv];
+
+  switch (evt.ev) {
+    case 'conv_start':
+      s.turns_done = 0; s.step = ''; s.turn = ''; s.done = false; s.wall_time = 0;
+      break;
+    case 'step_start':
+      s.step = evt.step; s.turn = evt.turn || '';
+      break;
+    case 'turn_done':
+      s.turns_done = evt.turns_done;
+      break;
+    case 'conv_done':
+      s.done = true; s.wall_time = evt.wall_time; s.step = 'done';
+      break;
+  }
+}
+
+function replayTo(targetTime) {
+  resetPlayback();
+  playbackTime = targetTime;
+  while (nextEventIdx < eventData.events.length &&
+         eventData.events[nextEventIdx].t <= targetTime) {
+    applyEvent(eventData.events[nextEventIdx++]);
+  }
+}
+
+// ── Rendering ────────────────────────────────────────────────────────────────
+function fmtTime(secs) {
+  const m = Math.floor(secs / 60);
+  const s = (secs % 60).toFixed(1).padStart(4, '0');
+  return `${m}:${s}`;
+}
+
+function updateRow(srvIdx, conv) {
+  const el = document.getElementById(`row-${srvIdx}-${conv}`);
+  if (!el) return;
+  const s      = state[srvIdx][conv];
+  const num    = String(conv + 1).padStart(2);
+  const filled = Math.round(s.turns_done / 5 * BAR_WIDTH);
+  const f      = '\u2588'.repeat(filled);
+  const e      = '\u2591'.repeat(BAR_WIDTH - filled);
+
+  if (s.done) {
+    const c = STEP_COLORS.done;
+    el.innerHTML =
+      `<span style="color:${NUMCOL}">${num} </span>` +
+      `<span style="color:${c}">${f}${e}  ${s.wall_time.toFixed(1)}s</span>`;
+  } else if (s.step) {
+    const c     = STEP_COLORS[s.step] || '#cccccc';
+    const label = s.turn ? `${s.turn}:${s.step}` : s.step;
+    el.innerHTML =
+      `<span style="color:${NUMCOL}">${num} </span>` +
+      `<span style="color:${c}">${f}</span>` +
+      `<span style="color:${DIM}">${e}</span>` +
+      `<span style="color:${c}">  ${label}</span>`;
+  } else {
+    el.innerHTML = `<span style="color:#3d3d3d">${num} ${f}${e}</span>`;
+  }
+}
+
+function updateFooter(srvIdx) {
+  const el        = document.getElementById(`footer-${srvIdx}`);
+  if (!el) return;
+  const srv       = state[srvIdx];
+  const doneCount = srv.filter(s => s.done).length;
+
+  if (doneCount === numRuns) {
+    const wall = Math.max(...srv.map(s => s.wall_time));
+    el.innerHTML =
+      `<span style="color:#66bb6a;font-weight:600">DONE ${doneCount}/${numRuns}  \u2713 ${wall.toFixed(1)}s</span>`;
+  } else {
+    el.innerHTML =
+      `<span style="color:#888">${doneCount}/${numRuns} done</span>`;
+  }
+}
+
+// ── Metrics rendering ────────────────────────────────────────────────────────
+const MBAR = 14;
+const CONC_DEFAULT = 24;
+
+function mBar(val, maxVal) {
+  const frac   = maxVal > 0 ? Math.min(val / maxVal, 1.0) : 0;
+  const filled = Math.round(frac * MBAR);
+  return {
+    f:    '\u2588'.repeat(filled),
+    e:    '\u2591'.repeat(MBAR - filled),
+    frac,
+  };
+}
+
+function mColor(frac, invert = false) {
+  // invert=false: green→yellow→red (bad = high, e.g. latency/waiting)
+  // invert=true:  red→yellow→green (good = high, e.g. KV hit rate)
+  if (invert) return frac < 0.4 ? '#ef5350' : frac < 0.7 ? '#ffa726' : '#66bb6a';
+  return frac < 0.5 ? '#4fc3f7' : frac < 0.8 ? '#ffa726' : '#ef5350';
+}
+
+function mRow(label, val, maxVal, fmt, invert = false) {
+  const {f, e, frac} = mBar(val, maxVal);
+  const c = mColor(frac, invert);
+  return `<div class="m-row">` +
+    `<span class="m-label">${label}</span>` +
+    `<span style="color:${c}">${f}</span>` +
+    `<span style="color:#2e2e2e">${e}</span>` +
+    `<span style="color:${c}">  ${fmt(val)}</span>` +
+    `</div>`;
+}
+
+function updateMetrics() {
+  const grid = document.getElementById('metricsGrid');
+  if (!grid || !grid.children.length) return;
+
+  if (!metricsState || !metricsState.vllm) {
+    // Leave panels showing their initial "no data" message
+    return;
+  }
+
+  const conc       = eventData.metadata?.concurrency || CONC_DEFAULT;
+  const allVllm    = Object.values(metricsState.vllm).filter(Boolean);
+  const ttftMax    = Math.max(Math.max(...allVllm.map(v => v.ttft_avg),   0) * 1.5, 0.5);
+  const e2eMax     = Math.max(Math.max(...allVllm.map(v => v.e2e_avg),    0) * 1.5, 2.0);
+  const promptMax  = Math.max(Math.max(...allVllm.map(v => v.prompt_avg), 0) * 1.5, 200);
+
+  eventData.servers.forEach((srvName, srvIdx) => {
+    const el = document.getElementById(`metrics-rows-${srvIdx}`);
+    if (!el) return;
+    const v = metricsState.vllm[srvName];
+    if (!v) return;
+
+    el.innerHTML =
+      mRow('KV hit',    v.kv_hit,     100,       x => `${x.toFixed(0)}%`,        true)  +
+      mRow('Running',   v.running,    conc,      x => `${x}/${conc}`,            false) +
+      mRow('Waiting',   v.waiting,    conc,      x => `${x}`,                    false) +
+      mRow('TTFT avg',  v.ttft_avg,   ttftMax,   x => `${x.toFixed(2)}s`,        false) +
+      mRow('E2E avg',   v.e2e_avg,    e2eMax,    x => `${x.toFixed(1)}s`,        false) +
+      mRow('Prompt',    v.prompt_avg, promptMax, x => `${Math.round(x)}\u00a0tok`, false);
+  });
+
+}
+
+function render() {
+  elapsedEl.textContent = fmtTime(playbackTime);
+
+  const frac = raceDuration > 0 ? playbackTime / raceDuration : 0;
+  scrubber.value = Math.round(frac * 1000);
+  scrubberTime.textContent = `${fmtTime(playbackTime)} / ${fmtTime(raceDuration)}`;
+
+  for (let srv = 0; srv < eventData.servers.length; srv++) {
+    for (let conv = 0; conv < numRuns; conv++) updateRow(srv, conv);
+    updateFooter(srv);
+  }
+  updateMetrics();
+}
+
+// ── Playback engine ──────────────────────────────────────────────────────────
+function tick(now) {
+  if (playing) {
+    const dt     = lastRealTime !== null ? (now - lastRealTime) / 1000 : 0;
+    lastRealTime = now;
+    playbackTime = Math.min(playbackTime + dt * speed, raceDuration);
+
+    while (nextEventIdx < eventData.events.length &&
+           eventData.events[nextEventIdx].t <= playbackTime) {
+      applyEvent(eventData.events[nextEventIdx++]);
+    }
+
+    render();
+
+    if (playbackTime >= raceDuration) {
+      playing      = false;
+      lastRealTime = null;
+      playBtn.textContent = '\u21BA Replay';
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+// ── Controls ─────────────────────────────────────────────────────────────────
+playBtn.addEventListener('click', () => {
+  if (playbackTime >= raceDuration) {
+    resetPlayback();
+    render();
+  }
+  playing = !playing;
+  if (playing) {
+    lastRealTime = null;
+    playBtn.textContent = '\u23F8 Pause';
+  } else {
+    lastRealTime = null;
+    playBtn.textContent = '\u25B6 Play';
+  }
+});
+
+document.querySelectorAll('.speed').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.speed').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    speed = parseFloat(btn.dataset.speed);
+  });
+});
+
+let scrubbing = false;
+scrubber.addEventListener('mousedown', () => {
+  scrubbing = true;
+  playing = false;
+  lastRealTime = null;
+  playBtn.textContent = '\u25B6 Play';
+});
+scrubber.addEventListener('input', () => {
+  if (!scrubbing || !eventData) return;
+  replayTo((scrubber.value / 1000) * raceDuration);
+  render();
+});
+scrubber.addEventListener('mouseup', () => { scrubbing = false; });
+
+// ── Grid builder ─────────────────────────────────────────────────────────────
+function buildGrid() {
+  const grid = document.getElementById('raceGrid');
+  grid.innerHTML = '';
+
+  eventData.servers.forEach((srvName, srvIdx) => {
+    const col = document.createElement('div');
+    col.className = 'server-col';
+
+    const hdr = document.createElement('div');
+    hdr.className = 'server-header';
+    hdr.textContent = srvName;
+    col.appendChild(hdr);
+
+    const rows = document.createElement('div');
+    rows.className = 'conv-rows';
+    for (let i = 0; i < numRuns; i++) {
+      const row = document.createElement('div');
+      row.className = 'conv-row';
+      row.id = `row-${srvIdx}-${i}`;
+      row.innerHTML =
+        `<span style="color:#3d3d3d">${String(i + 1).padStart(2)} ${'\u2591'.repeat(BAR_WIDTH)}</span>`;
+      rows.appendChild(row);
+    }
+    col.appendChild(rows);
+
+    const footer = document.createElement('div');
+    footer.className = 'server-footer';
+    footer.id = `footer-${srvIdx}`;
+    footer.innerHTML = `<span style="color:#555">0/${numRuns} done</span>`;
+    col.appendChild(footer);
+
+    grid.appendChild(col);
+  });
+
+  // ── Metrics panel ──────────────────────────────────────────────────────────
+  const mgrid = document.getElementById('metricsGrid');
+  mgrid.innerHTML = '';
+
+  const NO_DATA_MSG = '<div style="color:#3a3a3a;padding:0.3rem 0.5rem;font-size:12px">' +
+                      'metrics available on next real run</div>';
+
+  eventData.servers.forEach((srvName, srvIdx) => {
+    const col = document.createElement('div');
+    col.className = 'server-col';
+
+    const hdr = document.createElement('div');
+    hdr.className = 'server-header';
+    hdr.style.color = '#666';
+    hdr.textContent = `vLLM \u2014 ${srvName}`;
+    col.appendChild(hdr);
+
+    const rows = document.createElement('div');
+    rows.className = 'metrics-rows';
+    rows.id = `metrics-rows-${srvIdx}`;
+    rows.innerHTML = NO_DATA_MSG;
+    col.appendChild(rows);
+
+    mgrid.appendChild(col);
+  });
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    eventData    = await loadData();
+    numRuns      = eventData.metadata?.runs || 32;
+    raceDuration = eventData.race_wall || eventData.metadata?.race_wall || 0;
+
+    if (eventData.simulated) {
+      modeBadge.textContent = 'SIMULATED';
+      modeBadge.classList.add('sim');
+    }
+
+    buildGrid();
+    resetPlayback();
+    render();
+
+    // Auto-play at the default speed (5×, already marked active)
+    playing = true;
+    lastRealTime = null;
+    playBtn.textContent = '\u23F8 Pause';
+
+    requestAnimationFrame(tick);
+  } catch (err) {
+    errorEl.textContent = 'Error: ' + err.message;
+  }
+}
+
+init();
+</script>
+</body>
+</html>

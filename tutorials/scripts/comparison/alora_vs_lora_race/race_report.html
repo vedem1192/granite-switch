@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Granite Switch — ALORA vs LoRA Benchmark</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@carbon/styles@1/css/styles.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f4f4f4;
+      color: #161616;
+      line-height: 1.5;
+    }
+
+    .container { max-width: 1000px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+    header { margin-bottom: 2rem; }
+    header h1 { font-size: 1.75rem; font-weight: 600; color: #161616; margin-bottom: 0.25rem; }
+    header p  { color: #525252; font-size: 0.925rem; }
+
+    /* ── Summary strip ── */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: #e0e0e0;
+      border: 1px solid #e0e0e0;
+      margin-bottom: 1.5rem;
+    }
+
+    .summary-card {
+      background: #fff;
+      padding: 1.25rem 1.5rem;
+    }
+
+    .summary-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #525252;
+      margin-bottom: 0.4rem;
+    }
+
+    .summary-value {
+      font-size: 2rem;
+      font-weight: 300;
+      color: #161616;
+      line-height: 1.1;
+    }
+
+    .summary-value.highlight { color: #0f62fe; font-weight: 600; }
+    .summary-sub { font-size: 0.8rem; color: #6f6f6f; margin-top: 0.25rem; }
+
+    /* ── Panels ── */
+    .panel {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .panel-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #525252;
+      margin-bottom: 1.25rem;
+    }
+
+    /* ── Legend ── */
+    .legend {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.875rem;
+      color: #393939;
+    }
+
+    .legend-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* ── Charts ── */
+    .chart-wrap { position: relative; }
+    .chart-row  { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+
+    /* ── Step table ── */
+    .step-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .step-table th {
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #525252;
+      border-bottom: 2px solid #e0e0e0;
+      background: #f4f4f4;
+    }
+    .step-table th.right,
+    .step-table td.right { text-align: right; }
+    .step-table td {
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid #e0e0e0;
+      color: #161616;
+    }
+    .step-table tr:last-child td { border-bottom: none; }
+    .step-table tr:hover td { background: #f4f4f4; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0 0.6rem;
+      height: 1.4rem;
+      border-radius: 0.7rem;
+      font-size: 0.7rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .badge-alora  { background: #d0e2ff; color: #0043ce; }
+    .badge-lora   { background: #ffd6e8; color: #9f1853; }
+    .badge-base   { background: #f4f4f4; color: #525252; border: 1px solid #c6c6c6; }
+    .badge-local  { background: #defbe6; color: #044317; }
+
+    .diff-faster { color: #0e6027; font-weight: 600; }
+    .diff-slower { color: #da1e28; font-weight: 600; }
+
+    /* ── Metadata footer ── */
+    .meta {
+      font-size: 0.8rem;
+      color: #8d8d8d;
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e0e0e0;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>Granite Switch — ALORA vs LoRA Benchmark</h1>
+    <p id="subtitle">Government services RAG pipeline · loading…</p>
+  </header>
+
+  <!-- Summary strip -->
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-label">ALORA server wall</div>
+      <div class="summary-value" id="sum-alora-wall">—</div>
+      <div class="summary-sub" id="sum-alora-model">—</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">LoRA server wall</div>
+      <div class="summary-value" id="sum-lora-wall">—</div>
+      <div class="summary-sub" id="sum-lora-model">—</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Server-wall speedup</div>
+      <div class="summary-value highlight" id="sum-speedup">—</div>
+      <div class="summary-sub">ALORA ÷ LoRA wall-clock</div>
+    </div>
+  </div>
+
+  <!-- Per-conversation wall-clock (main chart) -->
+  <div class="panel">
+    <div class="panel-title">Per-conversation wall-clock</div>
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-swatch" style="background:#0f62fe"></div>ALORA
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch" style="background:#da1e28"></div>LoRA
+      </div>
+    </div>
+    <div class="chart-wrap" style="height:320px">
+      <canvas id="convChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Exit distribution -->
+  <div class="chart-row">
+    <div class="panel" style="margin-bottom:0">
+      <div class="panel-title">Exit distribution</div>
+      <div class="chart-wrap" style="height:240px">
+        <canvas id="exitChart"></canvas>
+      </div>
+    </div>
+  </div>
+  <div style="margin-bottom:1.25rem"></div>
+
+  <!-- Step detail table -->
+  <div class="panel">
+    <div class="panel-title">Step detail</div>
+    <table class="step-table">
+      <thead>
+        <tr>
+          <th>Step</th>
+          <th>Tech (ALORA server)</th>
+          <th class="right">Median (ms)</th>
+          <th class="right">Mean (ms)</th>
+          <th>Tech (LoRA server)</th>
+          <th class="right">Median (ms)</th>
+          <th class="right">Mean (ms)</th>
+          <th class="right">Speedup</th>
+        </tr>
+      </thead>
+      <tbody id="stepTableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="meta" id="meta-footer"></div>
+</div>
+
+<script>
+// ── Load data ────────────────────────────────────────────────────────────────
+// The report reads race_results.json from the same directory, or falls back to
+// RACE_DATA embedded below (used when opened as an IPython HTML widget in Colab).
+const RACE_DATA_EMBEDDED = {"metadata": {"mode": "sequential", "runs": 16, "concurrency": 8, "timestamp": "2026-11-19T19:00:03.249658+00:00", "race_wall": 108.32680681115016}, "servers": {"LORA (8112)": {"model": "/data/vdemers/granite-switch-benchmark/granite-switch-lora-only", "adapter_tech": {"guardian_harm": "lora", "query_rewrite": "lora", "answerability": "lora", "clarification": "lora", "generation": "base", "retrieval": "local"}, "wall_total": 94.40150253940374, "conv_walls": [44.45828572381288, 59.03514621220529, 62.36456131096929, 17.248583032283932, 94.40150253940374, 53.07930137217045, 49.3367768349126, 33.496557865757495, 81.99036639509723, 26.27820862689987, 56.54255214007571, 40.832730409223586, 54.21228904975578, 35.368870601058006, 44.2232319759205, 40.53259573923424], "conv_sums": [44.45751038240269, 59.034437695052475, 62.36392015963793, 17.248011470772326, 94.40085975825787, 53.078633301425725, 49.33609181642532, 33.49595917202532, 81.98969838162884, 26.27767970180139, 56.5415621008724, 40.83206564746797, 54.2116538817063, 35.36820602742955, 44.222578786779195, 40.53194937063381], "step_times": {"guardian_harm": [0.6586351715959609, 0.5323146916925907, 1.5470483861863613, 1.4429056071676314, 1.830074632074684, 0.657493757084012, 0.31079947715625167, 1.9918890632689, 1.44930142397061, 1.6305026798509061, 0.6575613007880747, 1.0244125640019774, 1.0922666881233454, 0.9522541523911059, 0.7837496493011713, 0.6490466208197176, 1.6994677959010005, 0.10358965070918202, 0.3448918890208006, 1.0478073987178504, 0.6558976043015718, 1.8658178797923028, 1.246741752140224, 2.8844464221037924, 1.0411330978386104, 0.6559021840803325, 1.7321688560768962, 2.0858066850341856, 2.1748548708856106, 0.7917536711320281, 0.6558792870491743, 0.9004864213056862, 0.5775315440259874, 1.539946299046278, 1.0746804140508175, 0.6545769544318318, 0.506017086096108, 0.7054629838094115, 1.3786672037094831, 1.0512612583115697, 1.0311173591762781, 0.4598944550380111, 0.7509053419344127, 0.6105618732981384, 0.5260009756311774, 0.25900777569040656, 1.8781872410327196, 1.2085331892594695, 0.34396509267389774, 0.27445184299722314, 0.8753527249209583, 0.4165244228206575, 0.7487742030061781, 1.0267416671849787, 0.5408553360030055, 0.6965889697894454, 0.6663680309429765, 1.1794602079316974, 0.6622609640471637, 1.0007132850587368, 0.14592322101816535, 1.3805310353636742, 1.27760790893808, 0.5350519199855626, 0.12527518393471837, 0.5727593670599163, 0.9459887249395251, 1.4631519308313727, 2.929856072179973, 0.6459676478989422, 0.3639570283703506, 1.1609964738599956, 1.1744941319338977, 1.075006531085819, 0.1415218049660325, 0.5410002432763577, 0.5925046037882566, 1.6728739431127906, 1.0001586340367794, 0.5426536309532821], "query_rewrite": [0.5168193140998483, 0.9200014271773398, 1.7931277728639543, 1.359545964282006, 0.5177511456422508, 1.6990862479433417, 4.739293942693621, 3.6076460550539196, 0.5175496223382652, 2.7844548453576863, 2.114681779872626, 3.049462652299553, 0.5245531187392771, 1.870704559609294, 0.6636267290450633, 2.6023689778521657, 0.5203280285932124, 4.652674848213792, 1.957335390150547, 4.391379412263632, 0.5177451767958701, 1.3353658220730722, 2.814028804656118, 2.338585359044373, 0.5174509608186781, 2.726352558005601, 3.181892902124673, 1.9037940660491586, 0.32164004212245345, 1.6186881610192358, 2.0908215730451047, 3.6155940811149776, 4.120021999813616, 3.77700541773811, 4.53499766625464, 1.147243251092732, 3.8298324551433325, 2.346565332263708, 2.0941550680436194, 1.411920428276062, 2.7635637600906193, 1.6985452147200704, 2.1673087319359183, 0.8031163183040917, 3.2011939990334213, 1.6700569340027869, 1.4374043359421194, 3.61565949767828, 3.2032176861539483, 1.664101565722376, 5.487817640881985, 0.7978598969057202, 1.9719658712856472, 1.1614889418706298, 2.503730308264494, 4.167136921081692, 2.7647072789259255, 0.6570456349290907, 3.6880738199688494, 0.8689104220829904, 2.3480546600185335, 1.9624330489896238, 5.3884447067976, 0.8118720119819045], "retrieval": [0.10085845179855824, 0.05083154793828726, 0.05093807727098465, 0.05358162382617593, 0.22910458454862237, 0.05894203390926123, 0.05874561797827482, 0.0688298917375505, 0.3478055917657912, 0.0473591098561883, 0.05141659500077367, 0.054419508669525385, 0.1666075550019741, 0.04745660722255707, 0.05583026306703687, 0.04944199835881591, 0.503424952737987, 0.0655639641918242, 0.06021544290706515, 0.06598326936364174, 0.2862076419405639, 0.042447296902537346, 0.06861118273809552, 0.048431054688990116, 0.4303143098950386, 0.05327589903026819, 0.06285072397440672, 0.06036369223147631, 0.24805061286315322, 0.04813727596774697, 0.05141811491921544, 0.04838000005111098, 0.05996582191437483, 0.06258578319102526, 0.09174401080235839, 0.04876240296289325, 0.06311154598370194, 0.04672278091311455, 0.05987482704222202, 0.04960645688697696, 0.05635688919574022, 0.05448835017159581, 0.058328002225607634, 0.04845349304378033, 0.06098628183826804, 0.0514024430885911, 0.0774381891824305, 0.06078461091965437, 0.057501320727169514, 0.05274717975407839, 0.0516541157849133, 0.05340193584561348, 0.06644779909402132, 0.048601393122226, 0.05079175578430295, 0.051199352368712425, 0.06766788940876722, 0.04771927511319518, 0.059812553226947784, 0.05598780419677496, 0.05528689222410321, 0.07724273717030883, 0.044521264731884, 0.05131737096235156], "answerability": [0.7936731879599392, 0.7322841370478272, 1.0196456941775978, 0.5709674791432917, 1.0244373879395425, 0.8726706770248711, 1.0471843099221587, 1.1832698942162097, 1.3762428602203727, 1.5882780961692333, 0.6374507360160351, 1.055714763700962, 0.9991494747810066, 1.2545430911704898, 0.5334820048883557, 0.6546563156880438, 1.7920663617551327, 1.263076155912131, 0.947267787065357, 2.6200665589421988, 1.247970474883914, 0.9462552699260414, 1.4915667427703738, 1.1986236027441919, 1.5756036331877112, 1.2562650050967932, 2.4839314948767424, 2.136195071041584, 0.6616402780637145, 0.7356284609995782, 1.0172958537004888, 0.6813597250729799, 0.3682304238900542, 0.697855785023421, 0.9955334416590631, 0.6568437181413174, 0.9570498261600733, 0.7564690201543272, 1.2450304268859327, 1.9941005180589855, 1.154844037257135, 0.8203472993336618, 0.6876123370602727, 0.9280929649248719, 1.1287272558547556, 0.7194314342923462, 1.2906036996282637, 2.82605241285637, 0.9335624328814447, 1.1616281592287123, 0.5433663898147643, 0.5424583088606596, 1.0154588660225272, 0.7469811281189322, 0.49454233376309276, 2.959923113230616, 1.521062851883471, 1.001434857957065, 1.4031192497350276, 0.5986905242316425, 0.670428320299834, 1.8904380779713392, 1.304897960741073, 1.053656883072108], "clarification": [2.0736371632665396, 2.34531936282292, 1.3501209057867527, 1.5347609352320433, 5.121937277726829, 0.6968464879319072, 1.376069800928235, 0.8519046222791076, 1.9054785668849945, 1.2168305371887982, 1.885552871041, 0.5195225640200078, 1.8564912830479443, 2.983785079792142, 0.8951288443058729, 1.9174335217103362, 4.782128275837749, 0.8745672907680273, 1.8878267612308264, 4.753137480933219, 1.1297986558638513, 2.0542198508046567, 2.4097968200221658, 1.1310384320095181, 1.089393140282482, 5.172076166141778, 1.070540385786444, 0.9967986731790006, 0.7389671714045107, 3.4985261471010745, 0.8115786360576749, 1.1294559468515217, 2.210521426051855, 1.1597363548353314, 1.9348936579190195, 3.7302911509759724, 1.4401174280792475, 1.1889020358212292, 4.023570590652525, 1.1806721799075603, 0.4027776471339166, 4.162333833053708, 2.581631905864924, 0.9659982109442353, 4.452246079687029, 0.57847940037027], "generation": [4.14764550793916, 19.032773341052234, 15.578437305986881, 10.043471292126924, 4.218822718132287, 11.388069122564048, 27.8329085460864, 3.461264856159687, 21.740962037816644, 40.39107358502224, 15.272974554914981, 10.455204961821437, 10.223363891243935, 10.205150745343417, 5.1658752132207155, 7.300389190670103, 21.143743561115116, 33.5746754007414, 6.462297201156616, 9.677909532096237, 26.965274862013757, 9.747512138914317, 6.239707228727639, 15.982915519736707, 13.109730223193765, 3.094828139990568, 4.084241554141045, 6.496451993007213, 13.92917527584359, 10.040998508688062, 4.486442180816084]}, "work": [{"history_turns": 0, "query_len": 154, "rewritten_len": 154, "num_docs": 10, "total_doc_chars": 18155, "clarification_len": 5, "answer_len": 497, "exit": "full_pipeline"}, {"history_turns": 1, "query_len": 74, "rewritten_len": 74, "num_docs": 10, "total_doc_chars": 15882, "clarification_len": 234, "exit": "needs_clarification"}, {"history_turns": 2, "query_len": 97, "rewritten_len": 99, "num_docs": 10, "total_doc_chars": 19506, "clarification_len": 5, "answer_len": 1245, "exit": "full_pipeline"}, {"history_turns": 3, "query_len": 102, "rewritten_len": 102, "num_docs": 10, "total_doc_chars": 19009, "clarification_len": 39, "exit": "needs_clarification"}, {"history_turns": 4, "query_len": 113, "exit": "harm_blocked"}, {"history_turns": 0, "query_len": 206, "rewritten_len": 206, "num_docs": 10, "total_doc_chars": 17824, "clarification_len": 352, "exit": "needs_clarification"}, {"history_turns": 1, "query_len": 110, "rewritten_len": 110, "num_docs": 10, "total_doc_chars": 20836, "clarification_len": 5, "answer_len": 1175, "exit": "full_pipeline"}, {"history_turns": 2, "query_len": 203, "rewritten_len": 172, "num_docs": 10, "total_doc_chars": 20558, "clarification_len": 5, "answer_len": 808, "exit": "full_pipeline"}, {"history_turns": 3, "query_len": 135, "rewritten_len": 135, "num_docs": 10, "total_doc_chars": 14490, "clarification_len": 5, "answer_len": 293, "exit": "full_pipeline"}, {"history_turns": 4, "query_len": 131, "exit": "harm_blocked"}, {"history_turns": 0, "query_len": 268, "rewritten_len": 268, "num_docs": 10, "total_doc_chars": 18934, "clarification_len": 5, "answer_len": 1060, "exit": "full_pipeline"}, {"history_turns": 1, "query_len": 99, "rewritten_len": 99, "num_docs": 10, "total_doc_chars": 22010, "clarification_len": 77, "exit": "needs_clarification"}, {"history_turns": 2, "query_len": 121, "rewritten_len": 121, "num_docs": 10, "total_doc_chars": 21234, "clarification_len": 5, "answer_len": 2119, "exit": "full_pipeline"}, {"history_turns": 3, "query_len": 122, "rewritten_len": 122, "num_docs": 10, "total_doc_chars": 18306, "exit": "unanswerable"}, {"history_turns": 3, "query_len": 154, "exit": "harm_blocked"}, {"history_turns": 0, "query_len": 175, "rewritten_len": 175, "num_docs": 10, "total_doc_chars": 21078, "exit": "unanswerable"}, {"history_turns": 0, "query_len": 81, "rewritten_len": 81, "num_docs": 10, "total_doc_chars": 22129, "exit": "unanswerable"}, {"history_turns": 0, "query_len": 150, "rewritten_len": 150, "num_docs": 10, "total_doc_chars": 17759, "clarification_len": 5, "answer_len": 347, "exit": "full_pipeline"}, {"history_turns": 1, "query_len": 87, "rewritten_len": 87, "num_docs": 10, "total_doc_chars": 18207, "exit": "unanswerable"}, {"history_turns": 1, "query_len": 84, "exit": "harm_blocked"}, {"history_turns": 0, "query_len": 243, "rewritten_len": 243, "num_docs": 10, "total_doc_chars": 18904, "clarification_len": 5, "answer_len": 1692, "exit": "full_pipeline"}, {"history_turns": 1, "query_len": 203, "rewritten_len": 203, "num_docs": 10, "total_doc_chars": 20206, "clarification_len": 183, "exit": "needs_clarification"}, {"history_turns": 2, "query_len": 296, "rewritten_len": 198, "num_docs": 10, "total_doc_chars": 19769, "clarification_len": 5, "answer_len": 2656, "exit": "full_pipeline"}, {"history_turns": 3, "query_len": 104, "rewritten_len": 104, "num_docs": 10, "total_doc_chars": 18881, "exit": "unanswerable"}, {"history_turns": 3, "query_len": 156, "exit": "harm_blocked"}, {"history_turns": 0, "query_len": 171, "rewritten_len": 171, "num_docs": 10, "total_doc_chars": 17836, "clarification_len": 5, "answer_len": 1442, "exit": "full_pipeline"}, {"history_turns": 1, "query_len": 97, "rewritten_len": 97, "num_docs": 10, "total_doc_chars": 18569, "clarification_len": 263, "exit": "needs_clarification"}, {"history_turns": 2, "query_len": 182, "rewritten_len": 182, "num_docs": 10, "total_doc_chars": 17829, "clarification_len": 5, "answer_len": 834, "exit": "full_pipeline"}, {"history_turns": 3, "query_len": 89, "rewritten_len": 89, "num_docs": 10, "total_doc_chars": 16670, "exit": "unanswerable"}, {"history_turns": 3, "query_len": 128, "exit": "harm_blocked"}, {"history_turns": 0, "query_len": 235, "rewritten_len": 235, "num_docs": 10, "total_doc_chars": 23936, "clarification_len": 5, "answer_len": 1274, "exit": "full_pipeline"}, {"history_turns": 1, "query_len": 112, "rewritten_len": 112, "num_docs": 10, "total_doc_chars": 24445, "clarification_len": 289, "exit": "needs_clarification"}, {"history_turns": 2, "query_len": 173, "rewritten_len": 152, "num_docs": 10, "total_doc_chars": 22293, "clarification_len": 5, "answer_len": 815, "exit": "full_pipeline"}, {"history_turns": 3, "query_len": 148, "rewritten_len": 148, "num_docs": 10, "total_doc_chars": 22175, "exit": "unanswerable"}, {"history_turns": 3, "query_len": 103, "exit": "harm_blocked"}, {"history_turns": 0, "query_len": 135, "rewritten_len": 135, "num_docs": 10, "total_doc_chars": 20633, "clarification_len": 5, "answer_len": 593, "exit": "full_pipeline"}, {"history_turns": 1, "query_len": 97, "rewritten_len": 97, "num_docs": 10, "total_doc_chars": 19711, "clarification_len": 177, "exit": "needs_clarification"}, {"history_turns": 2, "query_len": 89, "rewritten_len": 89, "num_docs": 10, "total_doc_chars": 18586, "clarification_len": 5, "answer_len": 540, "exit": "full_pipeline"}, {"history_turns": 3, "query_len": 81, "rewritten_len": 81, "num_docs": 10, "total_doc_chars": 20372, "exit": "unanswerable"}, {"history_turns": 3, "query_len": 107, "exit": "harm_blocked"}, {"history_turns": 0, "query_len": 155, "rewritten_len": 155, "num_docs": 10, "total_doc_chars": 20696, "clarification_len": 5, "answer_len": 1289, "exit": "full_pipeline"}, {"history_turns": 1, "query_len": 173, "rewritten_len": 173, "num_docs": 10, "total_doc_chars": 21772, "clarification_len": 320, "exit": "needs_clarification"}, {"history_turns": 2, "query_len": 389, "rewritten_len": 387, "num_docs": 10, "total_doc_chars": 21245, "clarification_len": 5, "answer_len": 2606, "exit": "full_pipeline"}, {"history_turns": 3, "query_len": 100, "rewritten_len": 100, "num_docs": 10, "total_doc_chars": 22403, "exit": "unanswerable"}, {"history_turns": 3, "query_len": 114, "exit": "harm_blocked"}, {"history_turns": 0, "query_len": 190, "rewritten_len": 190, "num_docs": 10, "total_doc_chars": 20375, "clarification_len": 5, "answer_len": 693, "exit": "full_pipeline"}, {"history_turns": 1, "query_len": 97, "rewritten_len": 97, "num_docs": 10, "total_doc_chars": 20666, "exit": "unanswerable"}, {"history_turns": 1, "query_len": 108, "rewritten_len": 108, "num_docs": 10, "total_doc_chars": 23944, "exit": "unanswerable"}, {"history_turns": 1, "query_len": 82, "rewritten_len": 82, "num_docs": 10, "total_doc_chars": 21676, "exit": "unanswerable"}, {"history_turns": 1, "query_len": 110, "exit": "harm_blocked"}, {"history_turns": 0, "query_len": 132, "rewritten_len": 132, "num_docs": 10, "total_doc_chars": 20347, "clarification_len": 5, "answer_len": 609, "exit": "full_pipeline"}, {"history_turns": 1, "query_len": 131, "rewritten_len": 131, "num_docs": 10, "total_doc_chars": 18611, "clarification_len": 233, "exit": "needs_clarification"}, {"history_turns": 2, "query_len": 180, "rewritten_len": 180, "num_docs": 10, "total_doc_chars": 20073, "clarification_len": 5, "answer_len": 1818, "exit": "full_pipeline"}, {"history_turns": 3, "query_len": 92, "rewritten_len": 92, "num_docs": 10, "total_doc_chars": 21649, "exit": "unanswerable"}, {"history_turns": 3, "query_len": 125, "exit": "harm_blocked"}, {"history_turns": 0, "query_len": 233, "rewritten_len": 233, "num_docs": 10, "total_doc_chars": 21571, "clarification_len": 5, "answer_len": 712, "exit": "full_pipeline"}, {"history_turns": 1, "query_len": 63, "rewritten_len": 63, "num_docs": 10, "total_doc_chars": 20009, "clarification_len": 206, "exit": "needs_clarification"}, {"history_turns": 2, "query_len": 207, "rewritten_len": 185, "num_docs": 10, "total_doc_chars": 21117, "clarification_len": 5, "answer_len": 433, "exit": "full_pipeline"}, {"history_turns": 3, "query_len": 140, "rewritten_len": 140, "num_docs": 10, "total_doc_chars": 20695, "exit": "unanswerable"}, {"history_turns": 3, "query_len": 117, "exit": "harm_blocked"}, {"history_turns": 0, "query_len": 138, "rewritten_len": 138, "num_docs": 10, "total_doc_chars": 22082, "clarification_len": 5, "answer_len": 1436, "exit": "full_pipeline"}, {"history_turns": 1, "query_len": 94, "rewritten_len": 94, "num_docs": 10, "total_doc_chars": 21104, "clarification_len": 233, "exit": "needs_clarification"}, {"history_turns": 2, "query_len": 125, "rewritten_len": 125, "num_docs": 10, "total_doc_chars": 21100, "clarification_len": 5, "answer_len": 2146, "exit": "full_pipeline"}, {"history_turns": 3, "query_len": 147, "rewritten_len": 147, "num_docs": 10, "total_doc_chars": 18290, "exit": "unanswerable"}, {"history_turns": 3, "query_len": 115, "exit": "harm_blocked"}, {"history_turns": 0, "query_len": 133, "rewritten_len": 133, "num_docs": 10, "total_doc_chars": 18143, "clarification_len": 5, "answer_len": 256, "exit": "full_pipeline"}, {"history_turns": 1, "query_len": 95, "rewritten_len": 95, "num_docs": 10, "total_doc_chars": 19357, "clarification_len": 313, "exit": "needs_clarification"}, {"history_turns": 2, "query_len": 122, "rewritten_len": 101, "num_docs": 10, "total_doc_chars": 19626, "clarification_len": 5, "answer_len": 292, "exit": "full_pipeline"}, {"history_turns": 3, "query_len": 110, "rewritten_len": 110, "num_docs": 10, "total_doc_chars": 18612, "exit": "unanswerable"}, {"history_turns": 3, "query_len": 108, "exit": "harm_blocked"}, {"history_turns": 0, "query_len": 203, "rewritten_len": 203, "num_docs": 10, "total_doc_chars": 22102, "clarification_len": 5, "answer_len": 679, "exit": "full_pipeline"}, {"history_turns": 1, "query_len": 97, "rewritten_len": 97, "num_docs": 10, "total_doc_chars": 20852, "clarification_len": 241, "exit": "needs_clarification"}, {"history_turns": 2, "query_len": 233, "rewritten_len": 233, "num_docs": 10, "total_doc_chars": 22280, "clarification_len": 5, "answer_len": 1488, "exit": "full_pipeline"}, {"history_turns": 3, "query_len": 180, "rewritten_len": 180, "num_docs": 10, "total_doc_chars": 22442, "exit": "unanswerable"}, {"history_turns": 3, "query_len": 166, "exit": "harm_blocked"}, {"history_turns": 0, "query_len": 122, "rewritten_len": 122, "num_docs": 10, "total_doc_chars": 21921, "clarification_len": 5, "answer_len": 833, "exit": "full_pipeline"}, {"history_turns": 1, "query_len": 82, "rewritten_len": 82, "num_docs": 10, "total_doc_chars": 22118, "clarification_len": 245, "exit": "needs_clarification"}, {"history_turns": 2, "query_len": 151, "rewritten_len": 151, "num_docs": 10, "total_doc_chars": 20282, "clarification_len": 5, "answer_len": 677, "exit": "full_pipeline"}, {"history_turns": 3, "query_len": 93, "rewritten_len": 93, "num_docs": 10, "total_doc_chars": 21960, "exit": "unanswerable"}, {"history_turns": 3, "query_len": 94, "exit": "harm_blocked"}]}}}; // <<RACE_DATA>>
+
+async function loadData() {
+  if (RACE_DATA_EMBEDDED) return RACE_DATA_EMBEDDED;
+  const r = await fetch('race_results.json');
+  if (!r.ok) throw new Error('Could not load race_results.json');
+  return r.json();
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function median(arr) {
+  if (!arr.length) return 0;
+  const s = [...arr].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m-1] + s[m]) / 2;
+}
+
+function mean(arr) {
+  return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+}
+
+function fmt1(v) { return v.toFixed(1); }
+function fmtMs(v) { return (v * 1000).toFixed(0); }
+function fmtS(v)  { return v.toFixed(1) + 's'; }
+
+function badgeHtml(tech) {
+  const cls = { alora: 'badge-alora', lora: 'badge-lora', base: 'badge-base', local: 'badge-local' };
+  return `<span class="badge ${cls[tech] || 'badge-base'}">${tech}</span>`;
+}
+
+const STEP_LABELS = {
+  guardian_harm: 'Guardian (harm)',
+  query_rewrite: 'Query rewrite',
+  retrieval:     'Retrieval',
+  answerability: 'Answerability',
+  clarification: 'Clarification',
+  generation:    'Generation',
+};
+
+const EXIT_LABELS = {
+  harm_blocked:       'Harm blocked',
+  unanswerable:       'Unanswerable',
+  needs_clarification:'Needs clarification',
+  full_pipeline:      'Full pipeline',
+};
+
+const EXIT_COLORS = ['#da1e28', '#ff832b', '#f1c21b', '#42be65'];
+
+// ── Render ───────────────────────────────────────────────────────────────────
+async function render() {
+  const data    = await loadData();
+  const meta    = data.metadata;
+  const labels  = Object.keys(data.servers);
+  const [la, ll] = labels;
+  const sa      = data.servers[la];
+  const sl      = data.servers[ll];
+
+  // Subtitle
+  document.getElementById('subtitle').textContent =
+    `${meta.runs} conversations × 5 turns · ${meta.concurrency} concurrent · ${meta.mode} mode · ${meta.timestamp.slice(0,10)}`;
+
+  // Summary cards
+  document.getElementById('sum-alora-wall').textContent = fmtS(sa.wall_total);
+  document.getElementById('sum-lora-wall').textContent  = fmtS(sl.wall_total);
+  document.getElementById('sum-alora-model').textContent = sa.model.split('/').pop();
+  document.getElementById('sum-lora-model').textContent  = sl.model.split('/').pop();
+  const speedup = sl.wall_total / sa.wall_total;
+  document.getElementById('sum-speedup').textContent = speedup.toFixed(2) + '×';
+
+  const steps     = Object.keys(STEP_LABELS);
+
+  // ── Per-conversation wall-clock (scatter) ──────────────────────────────
+  const convA = sa.conv_walls.map((v, i) => ({ x: i + 1, y: v }));
+  const convL = sl.conv_walls.map((v, i) => ({ x: i + 1, y: v }));
+
+  new Chart(document.getElementById('convChart'), {
+    type: 'scatter',
+    data: {
+      datasets: [
+        { label: la, data: convA, backgroundColor: '#0f62fe88', pointRadius: 5 },
+        { label: ll, data: convL, backgroundColor: '#da1e2888', pointRadius: 5 },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { title: { display: true, text: 'conversation #', color: '#525252', font: { size: 11 } },
+             grid: { display: false }, ticks: { color: '#525252' } },
+        y: { title: { display: true, text: 'wall-clock (s)', color: '#525252', font: { size: 11 } },
+             grid: { color: '#e0e0e0' }, ticks: { color: '#525252' } },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          label: ctx => ` ${ctx.dataset.label} conv ${ctx.parsed.x}: ${ctx.parsed.y.toFixed(1)}s`,
+        }},
+      },
+    },
+  });
+
+  // ── Exit distribution (grouped bar) ─────────────────────────────────────
+  const exitKeys  = ['harm_blocked', 'unanswerable', 'needs_clarification', 'full_pipeline'];
+  const exitNames = exitKeys.map(k => EXIT_LABELS[k]);
+
+  function countExits(srv) {
+    const c = {};
+    (srv.work || []).forEach(w => { c[w.exit] = (c[w.exit] || 0) + 1; });
+    return exitKeys.map(k => c[k] || 0);
+  }
+
+  new Chart(document.getElementById('exitChart'), {
+    type: 'bar',
+    data: {
+      labels: exitNames,
+      datasets: [
+        { label: la, data: countExits(sa), backgroundColor: '#0f62fe', borderRadius: 2 },
+        { label: ll, data: countExits(sl), backgroundColor: '#da1e28', borderRadius: 2 },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#161616', font: { size: 11 } } },
+        y: { grid: { color: '#e0e0e0' }, ticks: { color: '#525252' },
+             title: { display: true, text: 'queries', color: '#525252', font: { size: 11 } } },
+      },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}` } },
+      },
+    },
+  });
+
+  // ── Step detail table ────────────────────────────────────────────────────
+  const tbody = document.getElementById('stepTableBody');
+  steps.forEach(step => {
+    const ta = (sa.step_times[step] || []).map(v => v * 1000);
+    const tl = (sl.step_times[step] || []).map(v => v * 1000);
+    if (!ta.length && !tl.length) return;
+
+    const meda = median(ta), medl = median(tl);
+    const spd  = medl > 0 ? medl / meda : null;
+    const spdHtml = spd !== null
+      ? `<span class="${spd > 1 ? 'diff-faster' : 'diff-slower'}">${spd.toFixed(2)}×</span>`
+      : '—';
+
+    tbody.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td>${STEP_LABELS[step]}</td>
+        <td>${badgeHtml(sa.adapter_tech[step] || 'base')}</td>
+        <td class="right">${meda.toFixed(0)}</td>
+        <td class="right">${mean(ta).toFixed(0)}</td>
+        <td>${badgeHtml(sl.adapter_tech[step] || 'base')}</td>
+        <td class="right">${medl.toFixed(0)}</td>
+        <td class="right">${mean(tl).toFixed(0)}</td>
+        <td class="right">${spdHtml}</td>
+      </tr>
+    `);
+  });
+
+  // ── Footer ───────────────────────────────────────────────────────────────
+  document.getElementById('meta-footer').textContent =
+    `Generated ${meta.timestamp.slice(0,19).replace('T',' ')} UTC · `+
+    `${meta.runs} runs · concurrency ${meta.concurrency} · mode: ${meta.mode}`;
+}
+
+render().catch(err => {
+  document.querySelector('header p').textContent = 'Error loading data: ' + err.message;
+});
+</script>
+</body>
+</html>

@@ -43,7 +43,7 @@ def parse_args():
     parser.add_argument(
         "--race-templates",
         type=Path,
-        default=Path("../comparison/alora_vs_lora_race/sample_run"),
+        default=Path("/data/vdemers/granite-switch-benchmark/granite-switch/tutorials/scripts/comparison/alora_vs_lora_race/sample_run"),
         help="Directory containing HTML templates",
     )
     return parser.parse_args()
@@ -135,6 +135,92 @@ def embed_json_in_html(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w") as f:
         f.write(html)
+
+
+def compute_aggregate_statistics(merged_results_files: list[Path]) -> dict:
+    """Compute aggregate statistics across all seeds."""
+    import numpy as np
+
+    all_seeds = []
+
+    for seed_file in merged_results_files:
+        with open(seed_file) as f:
+            data = json.load(f)
+
+        # Extract data for both servers
+        alora_data = data["servers"].get("ALORA (8111)", {})
+        lora_data = data["servers"].get("LORA (8112)", {})
+
+        seed_stats = {
+            "alora": {
+                "wall_total": alora_data.get("wall_total", 0),
+                "num_conversations": len(alora_data.get("conversations", [])),
+            },
+            "lora": {
+                "wall_total": lora_data.get("wall_total", 0),
+                "num_conversations": len(lora_data.get("conversations", [])),
+            }
+        }
+
+        # Extract per-step medians
+        alora_step_medians = alora_data.get("step_medians", {})
+        lora_step_medians = lora_data.get("step_medians", {})
+
+        seed_stats["alora"]["step_medians"] = alora_step_medians
+        seed_stats["lora"]["step_medians"] = lora_step_medians
+
+        all_seeds.append(seed_stats)
+
+    if not all_seeds:
+        return {}
+
+    # Compute aggregates
+    alora_times = [s["alora"]["wall_total"] for s in all_seeds]
+    lora_times = [s["lora"]["wall_total"] for s in all_seeds]
+
+    aggregate = {
+        "num_seeds": len(all_seeds),
+        "alora": {
+            "wall_total_mean": float(np.mean(alora_times)),
+            "wall_total_std": float(np.std(alora_times)),
+            "wall_total_min": float(np.min(alora_times)),
+            "wall_total_max": float(np.max(alora_times)),
+        },
+        "lora": {
+            "wall_total_mean": float(np.mean(lora_times)),
+            "wall_total_std": float(np.std(lora_times)),
+            "wall_total_min": float(np.min(lora_times)),
+            "wall_total_max": float(np.max(lora_times)),
+        },
+        "speedup": float(np.mean(lora_times) / np.mean(alora_times)) if np.mean(alora_times) > 0 else 0,
+    }
+
+    # Aggregate step medians
+    all_step_names = set()
+    for seed in all_seeds:
+        all_step_names.update(seed["alora"]["step_medians"].keys())
+        all_step_names.update(seed["lora"]["step_medians"].keys())
+
+    alora_steps = {}
+    lora_steps = {}
+
+    for step_name in all_step_names:
+        alora_values = [s["alora"]["step_medians"].get(step_name, 0) for s in all_seeds]
+        lora_values = [s["lora"]["step_medians"].get(step_name, 0) for s in all_seeds]
+
+        alora_steps[step_name] = {
+            "mean": float(np.mean(alora_values)),
+            "std": float(np.std(alora_values)),
+        }
+        lora_steps[step_name] = {
+            "mean": float(np.mean(lora_values)),
+            "std": float(np.std(lora_values)),
+        }
+
+    aggregate["alora"]["step_medians"] = alora_steps
+    aggregate["lora"]["step_medians"] = lora_steps
+
+    return aggregate
 
 
 def generate_html_for_seed(
@@ -278,21 +364,72 @@ def main():
     print("=" * 80)
 
     # Generate HTML for each seed
+    merged_result_files = []
     for seed_num in seed_numbers:
         try:
             generate_html_for_seed(
                 seed_num, alora_dir, lora_dir, output_dir, templates_dir
             )
+            # Track merged results for aggregation
+            merged_file = output_dir / f"race_results_seed{seed_num}.json"
+            if merged_file.exists():
+                merged_result_files.append(merged_file)
         except Exception as e:
             print(f"  [ERROR] Failed to generate HTML for seed {seed_num}: {e}")
             import traceback
             traceback.print_exc()
             continue
 
+    # Compute aggregate statistics
+    if merged_result_files:
+        print("\n" + "=" * 80)
+        print("COMPUTING AGGREGATE STATISTICS")
+        print("=" * 80)
+
+        aggregate_stats = compute_aggregate_statistics(merged_result_files)
+
+        if aggregate_stats:
+            # Save aggregate statistics
+            aggregate_file = output_dir / "aggregate_statistics.json"
+            with open(aggregate_file, "w") as f:
+                json.dump(aggregate_stats, f, indent=2)
+            print(f"[SAVED] {aggregate_file}")
+
+            # Print summary
+            print(f"\n📊 Summary (mean ± std across {aggregate_stats['num_seeds']} seeds)")
+            print("─" * 80)
+            alora_mean = aggregate_stats["alora"]["wall_total_mean"]
+            alora_std = aggregate_stats["alora"]["wall_total_std"]
+            lora_mean = aggregate_stats["lora"]["wall_total_mean"]
+            lora_std = aggregate_stats["lora"]["wall_total_std"]
+            speedup = aggregate_stats["speedup"]
+
+            print(f"aLoRA:   {alora_mean:6.1f} ± {alora_std:5.1f}s")
+            print(f"LoRA:    {lora_mean:6.1f} ± {lora_std:5.1f}s")
+            print(f"Speedup: {speedup:.2f}×")
+
+            # Print per-step stats
+            print(f"\nPer-step latencies (mean ± std):")
+            alora_steps = aggregate_stats["alora"]["step_medians"]
+            lora_steps = aggregate_stats["lora"]["step_medians"]
+
+            for step_name in sorted(alora_steps.keys()):
+                alora_mean_step = alora_steps[step_name]["mean"]
+                alora_std_step = alora_steps[step_name]["std"]
+                lora_mean_step = lora_steps.get(step_name, {}).get("mean", 0)
+                lora_std_step = lora_steps.get(step_name, {}).get("std", 0)
+                step_speedup = lora_mean_step / alora_mean_step if alora_mean_step > 0 else 0
+
+                print(f"  {step_name:20s}: "
+                      f"aLoRA {alora_mean_step:.3f}±{alora_std_step:.3f}s, "
+                      f"LoRA {lora_mean_step:.3f}±{lora_std_step:.3f}s, "
+                      f"{step_speedup:.2f}×")
+
     print("\n" + "=" * 80)
     print("HTML GENERATION COMPLETE")
     print("=" * 80)
     print(f"Open visualizations: {output_dir}/race_live_seed*.html")
+    print(f"Aggregate statistics: {output_dir}/aggregate_statistics.json")
 
 
 if __name__ == "__main__":

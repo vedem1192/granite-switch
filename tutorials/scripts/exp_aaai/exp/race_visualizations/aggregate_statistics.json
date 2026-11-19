@@ -1,0 +1,18 @@
+{
+  "num_seeds": 3,
+  "alora": {
+    "wall_total_mean": 47.758295969727136,
+    "wall_total_std": 1.7327341764728355,
+    "wall_total_min": 46.322093470953405,
+    "wall_total_max": 50.19585741823539,
+    "step_medians": {}
+  },
+  "lora": {
+    "wall_total_mean": 88.81686188001186,
+    "wall_total_std": 2.677462602096145,
+    "wall_total_min": 85.13827808806673,
+    "wall_total_max": 91.43347284989432,
+    "step_medians": {}
+  },
+  "speedup": 1.8597158897024044
+}

@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-11-19T21:07:52.570233",
+  "num_seeds": 3,
+  "seeds_data": [
+    {
+      "seed": 1,
+      "total_conversations": 0,
+      "total_wall_time_s": 0
+    },
+    {
+      "seed": 2,
+      "total_conversations": 0,
+      "total_wall_time_s": 0
+    },
+    {
+      "seed": 3,
+      "total_conversations": 0,
+      "total_wall_time_s": 0
+    }
+  ],
+  "total_conversations_mean": 0.0,
+  "total_conversations_std": 0.0,
+  "total_conversations_min": 0.0,
+  "total_conversations_max": 0.0,
+  "total_wall_time_s_mean": 0.0,
+  "total_wall_time_s_std": 0.0,
+  "total_wall_time_s_min": 0.0,
+  "total_wall_time_s_max": 0.0
+}

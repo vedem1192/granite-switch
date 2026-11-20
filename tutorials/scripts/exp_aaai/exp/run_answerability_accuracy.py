@@ -63,7 +63,7 @@ def parse_args():
     parser.add_argument(
         "--chroma-path",
         type=Path,
-        default=Path("/data/vdemers/granite-switch-benchmark/granite-switch/tutorials/scripts/comparison/alora_vs_lora_race/govt_chroma"),
+        default=Path("/data/vdemers/granite-switch-benchmark/granite-switch/tutorials/scripts/comparison/alora_vs_lora_race/alora_vs_lora_race/govt_chroma"),
         help="Path to ChromaDB corpus",
     )
     parser.add_argument(
@@ -255,7 +255,19 @@ def retrieve_documents(query: str, chroma_path: Path, top_k: int) -> list[str]:
     import chromadb
 
     client = chromadb.PersistentClient(path=str(chroma_path))
-    collection = client.get_or_create_collection(name="govt_documents")
+
+    # Try to find the correct collection name (govt or govt_documents)
+    collections = client.list_collections()
+    collection_name = None
+    for c in collections:
+        if c.name in ["govt", "govt_documents"] and c.count() > 0:
+            collection_name = c.name
+            break
+
+    if collection_name is None:
+        collection_name = "govt"  # Default fallback
+
+    collection = client.get_collection(name=collection_name)
 
     results = collection.query(query_texts=[query], n_results=top_k)
 

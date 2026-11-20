@@ -75,12 +75,12 @@ def parse_args():
     )
     parser.add_argument(
         "--alora-model",
-        default="/data/vdemers/granite-switch-benchmark/granite-switch-alora-prefer",
+        default="/data//granite-switch-benchmark/granite-switch-alora-prefer",
         help="Path to aLoRA model checkpoint",
     )
     parser.add_argument(
         "--lora-model",
-        default="/data/vdemers/granite-switch-benchmark/granite-switch-lora-only",
+        default="/data//granite-switch-benchmark/granite-switch-lora-only",
         help="Path to LoRA model checkpoint",
     )
     parser.add_argument(
@@ -104,13 +104,13 @@ def parse_args():
     parser.add_argument(
         "--benchmark-script",
         type=Path,
-        default=Path("/data/vdemers/granite-switch-benchmark/granite-switch/tutorials/scripts/comparison/alora_vs_lora_race/bench_pipeline_race.py"),
+        default=Path("/data//granite-switch-benchmark/granite-switch/tutorials/scripts/comparison/alora_vs_lora_race/bench_pipeline_race.py"),
         help="Path to bench_pipeline_race.py",
     )
     parser.add_argument(
         "--race-dir",
         type=Path,
-        default=Path("/data/vdemers/granite-switch-benchmark/granite-switch/tutorials/scripts/comparison/alora_vs_lora_race"),
+        default=Path("/data//granite-switch-benchmark/granite-switch/tutorials/scripts/comparison/alora_vs_lora_race"),
         help="Directory containing race scripts and data",
     )
     parser.add_argument(

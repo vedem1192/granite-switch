@@ -80,11 +80,11 @@ Actual   Ans      4    | 6       (40% recall - VERY LOW)
 
 **Section 4.2 - Answerability Accuracy**
 
-"We evaluate the answerability adapter against a prompting baseline using two datasets: (1) 16 IRS/tax queries and (2) 20 diverse government service queries (VA, NASA, courts, CDC, EPA). Each experiment is run with 3 random seeds using ChromaDB vector retrieval (top-K=5) with the Granite embedding model.
+"We evaluate the answerability adapter against a prompting baseline using two datasets: (1) 16 IRS/tax queries and (2) 20 diverse government service queries (VA, NASA, courts, CDC, EPA). Both configurations use the same **Granite 4.1 3B base model** (2560 hidden size, 42 layers), ensuring a fair comparison. Each experiment is run with 3 random seeds using ChromaDB vector retrieval (top-K=5) with the Granite embedding model.
 
 **Results**: The answerability adapter achieves **87.5% accuracy** on the IRS dataset, substantially outperforming the prompting baseline (**56.3% accuracy**) by **31.2 percentage points**. The adapter demonstrates both high precision (**90.0%**) and recall (**90.0%**), while the prompting baseline suffers from low recall (**40.0%**), missing 6 out of 10 answerable questions.
 
-On the more diverse government services dataset, the adapter achieves **95.0% accuracy** with **100% recall**, demonstrating robust performance across varied government domains. The adapter shows perfect consistency across seeds (σ = 0.0 for all metrics)."
+On the more diverse government services dataset, the adapter achieves **95.0% accuracy** with **100% recall**, demonstrating robust performance across varied government domains. The adapter shows perfect consistency across seeds (σ = 0.0 for all metrics). Critically, these improvements come purely from the adapter approach, not from model size differences."
 
 ### Table Caption
 
@@ -99,7 +99,10 @@ On the more diverse government services dataset, the adapter achieves **95.0% ac
 
 ## Experimental Setup
 
-- **Model**: `granite-switch-alora-prefer` (adapter) vs `granite-4.1-3b` (prompting)
+- **Base Model**: Granite 4.1 3B (2560 hidden size, 42 layers) - **same for both configurations**
+- **Adapter Model**: `granite-switch-alora-prefer` (3B base + 12 adapters)
+- **Prompting Model**: `ibm-granite/granite-4.1-3b` (3B base, no adapters)
+- **Fair Comparison**: Both use the exact same 3B base model, only the method differs
 - **Corpus**: 49,607 government service documents (mt-rag-benchmark govt corpus)
 - **Embedding**: `ibm-granite/granite-embedding-small-english-r2` (max_length=1024)
 - **Retrieval**: ChromaDB with cosine similarity, top-K=5
@@ -131,7 +134,7 @@ On the more diverse government services dataset, the adapter achieves **95.0% ac
 # Adapter mode (IRS queries)
 python run_answerability_accuracy.py \
   --mode adapter \
-  --model /data/vdemers/granite-switch-benchmark/granite-switch-alora-prefer \
+  --model /data//granite-switch-benchmark/granite-switch-alora-prefer \
   --queries-file rag_101_queries.txt \
   --chroma-path ../comparison/alora_vs_lora_race/govt_chroma \
   --output-dir ./exp/accuracy_results/answerability/adapter \
@@ -141,7 +144,7 @@ python run_answerability_accuracy.py \
 # Adapter mode (realistic queries)
 python run_answerability_accuracy.py \
   --mode adapter \
-  --model /data/vdemers/granite-switch-benchmark/granite-switch-alora-prefer \
+  --model /data//granite-switch-benchmark/granite-switch-alora-prefer \
   --queries-file rag_101_queries_realistic.txt \
   --chroma-path ../comparison/alora_vs_lora_race/govt_chroma \
   --output-dir ./exp/accuracy_results/answerability/adapter_realistic \

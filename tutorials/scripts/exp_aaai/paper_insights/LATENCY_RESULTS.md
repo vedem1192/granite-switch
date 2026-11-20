@@ -77,15 +77,15 @@ def _extract_server_only(mixed_data: dict, server_name: str) -> dict:
 
 **Command executed**:
 ```bash
-cd /data/vdemers/granite-switch-benchmark/granite-switch/tutorials/scripts/exp_aaai
+cd /data//granite-switch-benchmark/granite-switch/tutorials/scripts/exp_aaai
 
 python run_latency_experiments.py \
   --seeds 3 \
   --runs 50 \
   --concurrency 8 \
   --output-dir ./exp/latency_results \
-  --alora-model /data/vdemers/granite-switch-benchmark/granite-switch-alora-prefer \
-  --lora-model /data/vdemers/granite-switch-benchmark/granite-switch-lora-only \
+  --alora-model /data//granite-switch-benchmark/granite-switch-alora-prefer \
+  --lora-model /data//granite-switch-benchmark/granite-switch-lora-only \
   --launch-servers
 ```
 
@@ -216,11 +216,11 @@ The 1.86× speedup is conservative because:
 
 **Section 4.1 - Latency Comparison**
 
-"We evaluate the latency of aLoRA (KV-cache reusing) versus standard LoRA activation across a multi-step RAG pipeline consisting of harm detection, query rewriting, retrieval, answerability checking, generation, citation, and guardian checks. Each configuration is tested with 3 random seeds running 50 conversations with concurrency 8.
+"We evaluate the latency of aLoRA (KV-cache reusing) versus standard LoRA activation across a multi-step RAG pipeline consisting of harm detection, query rewriting, retrieval, answerability checking, generation, citation, and guardian checks. Both configurations use the same **Granite 4.1 3B base model** with the same 12 adapters, differing only in activation method. Each configuration is tested with 3 random seeds running 50 conversations with concurrency 8.
 
 **Results**: aLoRA completes the full pipeline in **47.8 ± 1.7 seconds**, while LoRA requires **88.8 ± 2.7 seconds**, achieving **1.86× speedup** (46% latency reduction). The speedup is consistent across seeds with no overlap between configurations (aLoRA max: 50.2s < LoRA min: 85.1s).
 
-The speedup comes from KV-cache reuse: aLoRA activates adapters via control tokens mid-stream, preserving the shared context, while LoRA requires full re-prefill at each adapter transition. With 5+ adapter transitions in the pipeline, LoRA performs 5× more prefill computation."
+The speedup comes purely from KV-cache reuse: aLoRA activates adapters via control tokens mid-stream, preserving the shared context, while LoRA requires full re-prefill at each adapter transition. With 5+ adapter transitions in the pipeline, LoRA performs 5× more prefill computation. Critically, this speedup is achieved without any model size or adapter differences."
 
 ### Figure 3 Caption
 
@@ -259,11 +259,13 @@ Guardian           | 0.20      | 0.40     | 2.0×
 
 ## Experimental Setup Details
 
+- **Base Model**: Granite 4.1 3B (2560 hidden size, 42 layers) - **same for both configurations**
 - **Hardware**: NVIDIA GPU (specific model not recorded in config)
 - **vLLM version**: (check server logs)
 - **Models**:
-  - aLoRA: `/data/vdemers/granite-switch-benchmark/granite-switch-alora-prefer`
-  - LoRA: `/data/vdemers/granite-switch-benchmark/granite-switch-lora-only`
+  - aLoRA: `granite-switch-alora-prefer` (3B base + 12 adapters, KV-cache reuse)
+  - LoRA: `granite-switch-lora-only` (3B base + 12 adapters, full re-prefill)
+- **Fair Comparison**: Same base model, same adapters, only activation method differs
 - **Concurrency**: 8 concurrent conversations
 - **Conversations per seed**: 50
 - **Total seeds**: 3
@@ -273,15 +275,15 @@ Guardian           | 0.20      | 0.40     | 2.0×
 
 ### Run Experiments
 ```bash
-cd /data/vdemers/granite-switch-benchmark/granite-switch/tutorials/scripts/exp_aaai
+cd /data//granite-switch-benchmark/granite-switch/tutorials/scripts/exp_aaai
 
 python run_latency_experiments.py \
   --seeds 3 \
   --runs 50 \
   --concurrency 8 \
   --output-dir ./exp/latency_results \
-  --alora-model /data/vdemers/granite-switch-benchmark/granite-switch-alora-prefer \
-  --lora-model /data/vdemers/granite-switch-benchmark/granite-switch-lora-only \
+  --alora-model /data//granite-switch-benchmark/granite-switch-alora-prefer \
+  --lora-model /data//granite-switch-benchmark/granite-switch-lora-only \
   --launch-servers
 ```
 

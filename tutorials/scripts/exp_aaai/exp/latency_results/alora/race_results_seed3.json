@@ -7,7 +7,7 @@
     "race_wall": 148.44859904097393
   },
   "server_name": "ALORA (8111)",
-  "model": "/data/vdemers/granite-switch-benchmark/granite-switch-alora-prefer",
+  "model": "/data//granite-switch-benchmark/granite-switch-alora-prefer",
   "adapter_tech": {
     "guardian_harm": "alora",
     "query_rewrite": "alora",

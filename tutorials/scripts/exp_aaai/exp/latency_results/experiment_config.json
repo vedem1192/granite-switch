@@ -5,7 +5,7 @@
   "concurrency": 8,
   "top_k": 10,
   "server_type": "both",
-  "alora_model": "/data/vdemers/granite-switch-benchmark/granite-switch-alora-prefer",
-  "lora_model": "/data/vdemers/granite-switch-benchmark/granite-switch-lora-only",
+  "alora_model": "/data//granite-switch-benchmark/granite-switch-alora-prefer",
+  "lora_model": "/data//granite-switch-benchmark/granite-switch-lora-only",
   "max_model_len": 32768
 }

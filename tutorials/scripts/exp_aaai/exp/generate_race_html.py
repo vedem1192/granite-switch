@@ -43,7 +43,7 @@ def parse_args():
     parser.add_argument(
         "--race-templates",
         type=Path,
-        default=Path("/data/vdemers/granite-switch-benchmark/granite-switch/tutorials/scripts/comparison/alora_vs_lora_race/sample_run"),
+        default=Path("/data//granite-switch-benchmark/granite-switch/tutorials/scripts/comparison/alora_vs_lora_race/sample_run"),
         help="Directory containing HTML templates",
     )
     return parser.parse_args()

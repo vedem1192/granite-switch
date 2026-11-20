@@ -1,7 +1,7 @@
 {
   "seed": 1,
   "mode": "adapter",
-  "model": "/data/vdemers/granite-switch-benchmark/granite-switch-alora-prefer",
+  "model": "/data//granite-switch-benchmark/granite-switch-alora-prefer",
   "accuracy": 0.95,
   "precision": 0.9090909090909091,
   "recall": 1.0,

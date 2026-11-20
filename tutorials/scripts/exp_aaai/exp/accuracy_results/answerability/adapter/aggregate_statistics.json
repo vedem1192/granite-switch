@@ -1,7 +1,7 @@
 {
   "num_seeds": 3,
   "mode": "adapter",
-  "model": "/data/vdemers/granite-switch-benchmark/granite-switch-alora-prefer",
+  "model": "/data//granite-switch-benchmark/granite-switch-alora-prefer",
   "accuracy_mean": 0.875,
   "accuracy_std": 0.0,
   "accuracy_min": 0.875,
@@ -16,7 +16,7 @@
     {
       "seed": 1,
       "mode": "adapter",
-      "model": "/data/vdemers/granite-switch-benchmark/granite-switch-alora-prefer",
+      "model": "/data//granite-switch-benchmark/granite-switch-alora-prefer",
       "accuracy": 0.875,
       "precision": 0.9,
       "recall": 0.9,
@@ -147,7 +147,7 @@
     {
       "seed": 2,
       "mode": "adapter",
-      "model": "/data/vdemers/granite-switch-benchmark/granite-switch-alora-prefer",
+      "model": "/data//granite-switch-benchmark/granite-switch-alora-prefer",
       "accuracy": 0.875,
       "precision": 0.9,
       "recall": 0.9,
@@ -278,7 +278,7 @@
     {
       "seed": 3,
       "mode": "adapter",
-      "model": "/data/vdemers/granite-switch-benchmark/granite-switch-alora-prefer",
+      "model": "/data//granite-switch-benchmark/granite-switch-alora-prefer",
       "accuracy": 0.875,
       "precision": 0.9,
       "recall": 0.9,

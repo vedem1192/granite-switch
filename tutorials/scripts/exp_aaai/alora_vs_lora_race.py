@@ -39,15 +39,15 @@ New to this series? [`compose_granite_switch.ipynb`](./compose_granite_switch.ip
 # Clone the repo (skip if already present)
 import os
 
-# if not os.path.exists("/data/vdemers/granite-switch-benchmarkgranite-switch"):
-#     !GIT_TERMINAL_PROMPT=0 git clone https://github.com/generative-computing/granite-switch.git /data/vdemers/granite-switch-benchmarkgranite-switch
+# if not os.path.exists("/data//granite-switch-benchmarkgranite-switch"):
+#     !GIT_TERMINAL_PROMPT=0 git clone https://github.com/generative-computing/granite-switch.git /data//granite-switch-benchmarkgranite-switch
 # else:
 #     print("Repo already cloned")
 
 # Commented out IPython magic to ensure Python compatibility.
 # Install granite-switch with vLLM backend and benchmark dependencies.
 # This takes a few minutes on a fresh Colab instance.
-# %pip install -q -e "/data/vdemers/granite-switch-benchmarkgranite-switch[vllm]"
+# %pip install -q -e "/data//granite-switch-benchmarkgranite-switch[vllm]"
 # %pip install -q mellea chromadb rich tqdm transformers httpx
 
 # from huggingface_hub import notebook_login
@@ -59,7 +59,7 @@ import subprocess
 
 import torch
 
-RACE_DIR = "/data/vdemers/granite-switch-benchmark/granite-switch/tutorials/scripts/comparison/alora_vs_lora_race"
+RACE_DIR = "/data//granite-switch-benchmark/granite-switch/tutorials/scripts/comparison/alora_vs_lora_race"
 os.chdir(RACE_DIR)
 print("Working dir:", os.getcwd())
 
@@ -157,7 +157,7 @@ the composer prefers ALORA adapters and falls back to LoRA where ALORA is unavai
 Then start the composed model on port 8111 and run the benchmark against it.
 """
 
-ALORA_MODEL_DIR = "/data/vdemers/granite-switch-benchmark/granite-switch-alora-prefer"
+ALORA_MODEL_DIR = "/data//granite-switch-benchmark/granite-switch-alora-prefer"
 
 import os
 
@@ -201,10 +201,10 @@ print("GPU state:", r.stdout.strip())
 alora_proc = launch_vllm(
     model=ALORA_MODEL_DIR,
     port=8111,
-    log_file="/data/vdemers/granite-switch-benchmarkvllm_alora.log",
+    log_file="/data//granite-switch-benchmarkvllm_alora.log",
 )
 if not wait_for_server(8111):
-    tail_log("/data/vdemers/granite-switch-benchmarkvllm_alora.log")
+    tail_log("/data//granite-switch-benchmarkvllm_alora.log")
 
 # Benchmark the ALORA server.
 # --no-live disables Rich Live (which floods notebook output with redrawn frames).
@@ -236,10 +236,10 @@ libraries, using `--technology-filter lora` to force every adapter to its standa
 LoRA variant.
 
 This downloads the adapter libraries (~6 GB on first run, cached after that) and writes
-the composed checkpoint to `/data/vdemers/granite-switch-benchmarkgranite-switch-lora-only`.
+the composed checkpoint to `/data//granite-switch-benchmarkgranite-switch-lora-only`.
 """
 
-LORA_MODEL_DIR = "/data/vdemers/granite-switch-benchmark/granite-switch-lora-only"
+LORA_MODEL_DIR = "/data//granite-switch-benchmark/granite-switch-lora-only"
 
 import os
 
@@ -263,10 +263,10 @@ Start the LoRA-only composed model on port 8112 and run the same benchmark.
 lora_proc = launch_vllm(
     model=LORA_MODEL_DIR,
     port=8112,
-    log_file="/data/vdemers/granite-switch-benchmarkvllm_lora.log",
+    log_file="/data//granite-switch-benchmarkvllm_lora.log",
 )
 if not wait_for_server(8112):
-    tail_log("/data/vdemers/granite-switch-benchmarkvllm_lora.log")
+    tail_log("/data//granite-switch-benchmarkvllm_lora.log")
 
 # !python bench_pipeline_race.py --mode sequential --server "LORA (8112)" --lora-model {LORA_MODEL_DIR} --no-live -n 16 -c 8 -k 10
 cmd = [

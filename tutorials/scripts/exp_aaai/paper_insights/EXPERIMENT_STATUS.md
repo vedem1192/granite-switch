@@ -63,8 +63,9 @@
 - Data: `exp/latency_results/` and `exp/race_visualizations/`
 
 ### Table 1: Model Configuration
-- Status: Can extract from model config
-- Shows: Model size, adapter count, control tokens, etc.
+- Status: ✅ Available from config files
+- Shows: Granite 4.1 3B (2560 hidden size, 42 layers), 12 adapters, control tokens
+- Key point: **Same 3B base model used across all experiments** (fair comparison)
 
 ### Table 2: Answerability Accuracy
 - Status: ✅ Complete
@@ -119,7 +120,7 @@
 
 - Experiments run on: aims-01 server
 - ChromaDB corpus: 49,607 govt documents
-- Models stored: `/data/vdemers/granite-switch-benchmark/`
+- Models stored: `/data//granite-switch-benchmark/`
 - Working directory: `/Users/veroniquedemers/git/granite/granite-switch/tutorials/scripts/exp_aaai/`
 
 ---

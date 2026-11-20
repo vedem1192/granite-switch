@@ -63,7 +63,7 @@ def parse_args():
     parser.add_argument(
         "--chroma-path",
         type=Path,
-        default=Path("/data/vdemers/granite-switch-benchmark/granite-switch/tutorials/scripts/comparison/alora_vs_lora_race/alora_vs_lora_race/govt_chroma"),
+        default=Path("/data//granite-switch-benchmark/granite-switch/tutorials/scripts/comparison/alora_vs_lora_race/alora_vs_lora_race/govt_chroma"),
         help="Path to ChromaDB corpus",
     )
     parser.add_argument(

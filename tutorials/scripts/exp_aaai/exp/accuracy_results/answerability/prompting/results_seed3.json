@@ -1,0 +1,131 @@
+{
+  "seed": 3,
+  "mode": "prompting",
+  "model": "ibm-granite/granite-4.1-30b",
+  "accuracy": 0.375,
+  "precision": 0,
+  "recall": 0.0,
+  "f1": 0,
+  "correct": 6,
+  "total": 16,
+  "confusion_matrix": {
+    "tp": 0,
+    "fp": 0,
+    "tn": 6,
+    "fn": 10
+  },
+  "results": [
+    {
+      "query": "How do I check the status of my federal tax refund?",
+      "expected": "answerable",
+      "predicted": "unanswerable",
+      "correct": false,
+      "num_documents": 0
+    },
+    {
+      "query": "How long does it take to get a tax refund?",
+      "expected": "answerable",
+      "predicted": "unanswerable",
+      "correct": false,
+      "num_documents": 0
+    },
+    {
+      "query": "How do I check the status of an amended tax return?",
+      "expected": "answerable",
+      "predicted": "unanswerable",
+      "correct": false,
+      "num_documents": 0
+    },
+    {
+      "query": "How do I get an Identity Protection PIN?",
+      "expected": "answerable",
+      "predicted": "unanswerable",
+      "correct": false,
+      "num_documents": 0
+    },
+    {
+      "query": "Who qualifies for the Earned Income Tax Credit?",
+      "expected": "answerable",
+      "predicted": "unanswerable",
+      "correct": false,
+      "num_documents": 0
+    },
+    {
+      "query": "How do I claim the Child Tax Credit?",
+      "expected": "answerable",
+      "predicted": "unanswerable",
+      "correct": false,
+      "num_documents": 0
+    },
+    {
+      "query": "What is the Employee Retention Credit?",
+      "expected": "answerable",
+      "predicted": "unanswerable",
+      "correct": false,
+      "num_documents": 0
+    },
+    {
+      "query": "How do businesses get a California tax refund?",
+      "expected": "answerable",
+      "predicted": "unanswerable",
+      "correct": false,
+      "num_documents": 0
+    },
+    {
+      "query": "What is the standard deduction this year?",
+      "expected": "answerable",
+      "predicted": "unanswerable",
+      "correct": false,
+      "num_documents": 0
+    },
+    {
+      "query": "How do I file my taxes for free?",
+      "expected": "answerable",
+      "predicted": "unanswerable",
+      "correct": false,
+      "num_documents": 0
+    },
+    {
+      "query": "What's the best recipe for sourdough bread?",
+      "expected": "unanswerable",
+      "predicted": "unanswerable",
+      "correct": true,
+      "num_documents": 0
+    },
+    {
+      "query": "Who won the 1998 FIFA World Cup?",
+      "expected": "unanswerable",
+      "predicted": "unanswerable",
+      "correct": true,
+      "num_documents": 0
+    },
+    {
+      "query": "How do I change a flat bicycle tire?",
+      "expected": "unanswerable",
+      "predicted": "unanswerable",
+      "correct": true,
+      "num_documents": 0
+    },
+    {
+      "query": "What is the boiling point of water on Mount Everest?",
+      "expected": "unanswerable",
+      "predicted": "unanswerable",
+      "correct": true,
+      "num_documents": 0
+    },
+    {
+      "query": "Which programming language is best for beginners?",
+      "expected": "unanswerable",
+      "predicted": "unanswerable",
+      "correct": true,
+      "num_documents": 0
+    },
+    {
+      "query": "How many moons does Jupiter have?",
+      "expected": "unanswerable",
+      "predicted": "unanswerable",
+      "correct": true,
+      "num_documents": 0
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-11-20T00:04:57.086509",
+  "mode": "adapter",
+  "model": "/data/vdemers/granite-switch-benchmark/granite-switch-alora-prefer",
+  "seeds": 3,
+  "queries_file": "/data/vdemers/granite-switch-benchmark/granite-switch/tutorials/scripts/exp_aaai/rag_101_queries.txt",
+  "chroma_path": "/data/vdemers/granite-switch-benchmark/granite-switch/tutorials/scripts/comparison/alora_vs_lora_race/govt_chroma",
+  "top_k": 5
+}

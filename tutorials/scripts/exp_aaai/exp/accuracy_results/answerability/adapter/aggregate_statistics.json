@@ -2,53 +2,53 @@
   "num_seeds": 3,
   "mode": "adapter",
   "model": "/data/vdemers/granite-switch-benchmark/granite-switch-alora-prefer",
-  "accuracy_mean": 0.375,
+  "accuracy_mean": 0.875,
   "accuracy_std": 0.0,
-  "accuracy_min": 0.375,
-  "accuracy_max": 0.375,
-  "precision_mean": 0.0,
+  "accuracy_min": 0.875,
+  "accuracy_max": 0.875,
+  "precision_mean": 0.9,
   "precision_std": 0.0,
-  "recall_mean": 0.0,
+  "recall_mean": 0.9,
   "recall_std": 0.0,
-  "f1_mean": 0.0,
+  "f1_mean": 0.9,
   "f1_std": 0.0,
   "seeds_data": [
     {
       "seed": 1,
       "mode": "adapter",
       "model": "/data/vdemers/granite-switch-benchmark/granite-switch-alora-prefer",
-      "accuracy": 0.375,
-      "precision": 0,
-      "recall": 0.0,
-      "f1": 0,
-      "correct": 6,
+      "accuracy": 0.875,
+      "precision": 0.9,
+      "recall": 0.9,
+      "f1": 0.9,
+      "correct": 14,
       "total": 16,
       "confusion_matrix": {
-        "tp": 0,
-        "fp": 0,
-        "tn": 6,
-        "fn": 10
+        "tp": 9,
+        "fp": 1,
+        "tn": 5,
+        "fn": 1
       },
       "results": [
         {
           "query": "How do I check the status of my federal tax refund?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
           "query": "How long does it take to get a tax refund?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
           "query": "How do I check the status of an amended tax return?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
@@ -61,43 +61,43 @@
         {
           "query": "Who qualifies for the Earned Income Tax Credit?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
           "query": "How do I claim the Child Tax Credit?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
           "query": "What is the Employee Retention Credit?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
           "query": "How do businesses get a California tax refund?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
           "query": "What is the standard deduction this year?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
           "query": "How do I file my taxes for free?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
@@ -138,8 +138,8 @@
         {
           "query": "How many moons does Jupiter have?",
           "expected": "unanswerable",
-          "predicted": "unanswerable",
-          "correct": true,
+          "predicted": "answerable",
+          "correct": false,
           "num_documents": 5
         }
       ]
@@ -148,38 +148,38 @@
       "seed": 2,
       "mode": "adapter",
       "model": "/data/vdemers/granite-switch-benchmark/granite-switch-alora-prefer",
-      "accuracy": 0.375,
-      "precision": 0,
-      "recall": 0.0,
-      "f1": 0,
-      "correct": 6,
+      "accuracy": 0.875,
+      "precision": 0.9,
+      "recall": 0.9,
+      "f1": 0.9,
+      "correct": 14,
       "total": 16,
       "confusion_matrix": {
-        "tp": 0,
-        "fp": 0,
-        "tn": 6,
-        "fn": 10
+        "tp": 9,
+        "fp": 1,
+        "tn": 5,
+        "fn": 1
       },
       "results": [
         {
           "query": "How do I check the status of my federal tax refund?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
           "query": "How long does it take to get a tax refund?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
           "query": "How do I check the status of an amended tax return?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
@@ -192,43 +192,43 @@
         {
           "query": "Who qualifies for the Earned Income Tax Credit?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
           "query": "How do I claim the Child Tax Credit?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
           "query": "What is the Employee Retention Credit?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
           "query": "How do businesses get a California tax refund?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
           "query": "What is the standard deduction this year?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
           "query": "How do I file my taxes for free?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
@@ -269,8 +269,8 @@
         {
           "query": "How many moons does Jupiter have?",
           "expected": "unanswerable",
-          "predicted": "unanswerable",
-          "correct": true,
+          "predicted": "answerable",
+          "correct": false,
           "num_documents": 5
         }
       ]
@@ -279,38 +279,38 @@
       "seed": 3,
       "mode": "adapter",
       "model": "/data/vdemers/granite-switch-benchmark/granite-switch-alora-prefer",
-      "accuracy": 0.375,
-      "precision": 0,
-      "recall": 0.0,
-      "f1": 0,
-      "correct": 6,
+      "accuracy": 0.875,
+      "precision": 0.9,
+      "recall": 0.9,
+      "f1": 0.9,
+      "correct": 14,
       "total": 16,
       "confusion_matrix": {
-        "tp": 0,
-        "fp": 0,
-        "tn": 6,
-        "fn": 10
+        "tp": 9,
+        "fp": 1,
+        "tn": 5,
+        "fn": 1
       },
       "results": [
         {
           "query": "How do I check the status of my federal tax refund?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
           "query": "How long does it take to get a tax refund?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
           "query": "How do I check the status of an amended tax return?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
@@ -323,43 +323,43 @@
         {
           "query": "Who qualifies for the Earned Income Tax Credit?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
           "query": "How do I claim the Child Tax Credit?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
           "query": "What is the Employee Retention Credit?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
           "query": "How do businesses get a California tax refund?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
           "query": "What is the standard deduction this year?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
           "query": "How do I file my taxes for free?",
           "expected": "answerable",
-          "predicted": "unanswerable",
-          "correct": false,
+          "predicted": "answerable",
+          "correct": true,
           "num_documents": 5
         },
         {
@@ -400,8 +400,8 @@
         {
           "query": "How many moons does Jupiter have?",
           "expected": "unanswerable",
-          "predicted": "unanswerable",
-          "correct": true,
+          "predicted": "answerable",
+          "correct": false,
           "num_documents": 5
         }
       ]

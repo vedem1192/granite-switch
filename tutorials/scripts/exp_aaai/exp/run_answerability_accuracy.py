@@ -252,25 +252,17 @@ def run_answerability_adapter(
 
 def retrieve_documents(query: str, chroma_path: Path, top_k: int) -> list[str]:
     """Retrieve top-k documents for a query."""
-    import chromadb
+    from granite_switch.tutorials.chroma_loader import load_or_build_govt_chroma
 
-    client = chromadb.PersistentClient(path=str(chroma_path))
-
-    # Try to find the correct collection name (govt or govt_documents)
-    collections = client.list_collections()
-    collection_name = None
-    for c in collections:
-        if c.name in ["govt", "govt_documents"] and c.count() > 0:
-            collection_name = c.name
-            break
-
-    if collection_name is None:
-        collection_name = "govt"  # Default fallback
-
-    collection = client.get_collection(name=collection_name)
+    # Load collection with correct embedding function (same as rag_101.ipynb)
+    # This is done per-query which is inefficient, but keeps the function simple
+    collection = load_or_build_govt_chroma(
+        chroma_path=str(chroma_path),
+        load_only_tutorial_docs=False,
+        query_device="cpu",
+    )
 
     results = collection.query(query_texts=[query], n_results=top_k)
-
     documents = results.get("documents", [[]])[0]
     return documents
 

@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-11-19T23:48:50.381725",
+  "timestamp": "2026-11-20T01:50:37.168360",
   "mode": "prompting",
-  "model": "ibm-granite/granite-4.1-30b",
+  "model": "ibm-granite/granite-4.1-3b",
   "seeds": 3,
   "queries_file": "/data/vdemers/granite-switch-benchmark/granite-switch/tutorials/scripts/exp_aaai/rag_101_queries.txt",
-  "chroma_path": "/data/vdemers/granite-switch-benchmark/granite-switch/tutorials/scripts/comparison/alora_vs_lora_race/govt_chroma",
+  "chroma_path": "/data/vdemers/granite-switch-benchmark/granite-switch/tutorials/scripts/comparison/alora_vs_lora_race/alora_vs_lora_race/govt_chroma",
   "top_k": 5
 }

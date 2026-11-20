@@ -1,0 +1,46 @@
+# Answerable queries - Based on actual govt.jsonl content
+# These questions CAN be answered using the California/Federal government services corpus
+
+# Veterans Affairs (VA)
+How do I submit a Freedom of Information Act request to the VA?
+What medical services are available at VA hospitals?
+
+# NASA / Space
+What causes the seasons on Earth?
+How does Earth's axis tilt affect the seasons?
+
+# California Courts
+What is the process for oral arguments in California appellate courts?
+How do I file a domestic violence restraining order in California?
+
+# California State Services
+How do I register to vote in California?
+What are the requirements for California vehicle emissions testing?
+
+# Federal Agencies (CDC/EPA/DHS)
+What are the CDC guidelines for COVID-19 biosafety?
+How do I properly compost according to EPA guidelines?
+
+# ─────────────────────────────────────────────────────────────────
+# Unanswerable queries - Off-topic questions NOT in the corpus
+# ─────────────────────────────────────────────────────────────────
+
+# Cooking/Food
+What's the best recipe for sourdough bread?
+How do I make homemade pasta from scratch?
+
+# Sports
+Who won the 1998 FIFA World Cup?
+What team won the Super Bowl in 2020?
+
+# DIY/Hobbies
+How do I change a flat bicycle tire?
+What's the best way to paint a room?
+
+# General Knowledge
+What is the boiling point of water on Mount Everest?
+How many moons does Jupiter have?
+
+# Technology
+Which programming language is best for beginners?
+How do I build a personal computer?

@@ -1,0 +1,159 @@
+{
+  "seed": 3,
+  "mode": "adapter",
+  "model": "/data/vdemers/granite-switch-benchmark/granite-switch-alora-prefer",
+  "accuracy": 0.95,
+  "precision": 0.9090909090909091,
+  "recall": 1.0,
+  "f1": 0.9523809523809523,
+  "correct": 19,
+  "total": 20,
+  "confusion_matrix": {
+    "tp": 10,
+    "fp": 1,
+    "tn": 9,
+    "fn": 0
+  },
+  "results": [
+    {
+      "query": "How do I submit a Freedom of Information Act request to the VA?",
+      "expected": "answerable",
+      "predicted": "answerable",
+      "correct": true,
+      "num_documents": 5
+    },
+    {
+      "query": "What medical services are available at VA hospitals?",
+      "expected": "answerable",
+      "predicted": "answerable",
+      "correct": true,
+      "num_documents": 5
+    },
+    {
+      "query": "What causes the seasons on Earth?",
+      "expected": "answerable",
+      "predicted": "answerable",
+      "correct": true,
+      "num_documents": 5
+    },
+    {
+      "query": "How does Earth's axis tilt affect the seasons?",
+      "expected": "answerable",
+      "predicted": "answerable",
+      "correct": true,
+      "num_documents": 5
+    },
+    {
+      "query": "What is the process for oral arguments in California appellate courts?",
+      "expected": "answerable",
+      "predicted": "answerable",
+      "correct": true,
+      "num_documents": 5
+    },
+    {
+      "query": "How do I file a domestic violence restraining order in California?",
+      "expected": "answerable",
+      "predicted": "answerable",
+      "correct": true,
+      "num_documents": 5
+    },
+    {
+      "query": "How do I register to vote in California?",
+      "expected": "answerable",
+      "predicted": "answerable",
+      "correct": true,
+      "num_documents": 5
+    },
+    {
+      "query": "What are the requirements for California vehicle emissions testing?",
+      "expected": "answerable",
+      "predicted": "answerable",
+      "correct": true,
+      "num_documents": 5
+    },
+    {
+      "query": "What are the CDC guidelines for COVID-19 biosafety?",
+      "expected": "answerable",
+      "predicted": "answerable",
+      "correct": true,
+      "num_documents": 5
+    },
+    {
+      "query": "How do I properly compost according to EPA guidelines?",
+      "expected": "answerable",
+      "predicted": "answerable",
+      "correct": true,
+      "num_documents": 5
+    },
+    {
+      "query": "What's the best recipe for sourdough bread?",
+      "expected": "unanswerable",
+      "predicted": "unanswerable",
+      "correct": true,
+      "num_documents": 5
+    },
+    {
+      "query": "How do I make homemade pasta from scratch?",
+      "expected": "unanswerable",
+      "predicted": "unanswerable",
+      "correct": true,
+      "num_documents": 5
+    },
+    {
+      "query": "Who won the 1998 FIFA World Cup?",
+      "expected": "unanswerable",
+      "predicted": "unanswerable",
+      "correct": true,
+      "num_documents": 5
+    },
+    {
+      "query": "What team won the Super Bowl in 2020?",
+      "expected": "unanswerable",
+      "predicted": "unanswerable",
+      "correct": true,
+      "num_documents": 5
+    },
+    {
+      "query": "How do I change a flat bicycle tire?",
+      "expected": "unanswerable",
+      "predicted": "unanswerable",
+      "correct": true,
+      "num_documents": 5
+    },
+    {
+      "query": "What's the best way to paint a room?",
+      "expected": "unanswerable",
+      "predicted": "unanswerable",
+      "correct": true,
+      "num_documents": 5
+    },
+    {
+      "query": "What is the boiling point of water on Mount Everest?",
+      "expected": "unanswerable",
+      "predicted": "unanswerable",
+      "correct": true,
+      "num_documents": 5
+    },
+    {
+      "query": "How many moons does Jupiter have?",
+      "expected": "unanswerable",
+      "predicted": "answerable",
+      "correct": false,
+      "num_documents": 5
+    },
+    {
+      "query": "Which programming language is best for beginners?",
+      "expected": "unanswerable",
+      "predicted": "unanswerable",
+      "correct": true,
+      "num_documents": 5
+    },
+    {
+      "query": "How do I build a personal computer?",
+      "expected": "unanswerable",
+      "predicted": "unanswerable",
+      "correct": true,
+      "num_documents": 5
+    }
+  ]
+}
